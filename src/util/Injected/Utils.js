@@ -574,7 +574,7 @@ exports.LoadUtils = () => {
             try {
                 chat = window.Store.WAWebNewsletterMetadataCollection.get(chatId);
                 if (!chat) {
-                    await window.Store.ChannelUtils.loadNewsletterPreviewChat(chatId);
+                    await window.WWebJS.getChannelMetadata(chatId);
                     chat = await window.Store.WAWebNewsletterMetadataCollection.find(chatWid);
                 }
             } catch (err) {
