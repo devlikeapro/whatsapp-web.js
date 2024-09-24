@@ -548,31 +548,30 @@ exports.LoadUtils = () => {
     };
 
     window.WWebJS.getChannelMetadata = async (inviteCode) => {
-        const response =
-            await window.Store.ChannelUtils.queryNewsletterMetadataByInviteCode(
-                inviteCode,
-                window.Store.ChannelUtils.getRoleByIdentifier(inviteCode)
-            );
-
-        const picUrl = response.newsletterPictureMetadataMixin?.picture[0]?.queryPictureDirectPathOrEmptyResponseMixinGroup.value.directPath;
+        const previewData =  await window.Store.ChannelUtils.getNewsletterPreviewData(
+            inviteCode, 
+            window.Store.ChannelUtils.getRoleByIdentifier(inviteCode)
+        );
+        const newsletterMetadata = previewData.newsletterMetadata;
+        const picUrl = newsletterMetadata.newsletterPictureMetadataMixin?.picture[0]?.queryPictureDirectPathOrEmptyResponseMixinGroup.value.directPath;
 
         return {
-            id: response.idJid,
-            createdAtTs: response.newsletterCreationTimeMetadataMixin.creationTimeValue,
+            id: newsletterMetadata.idJid,
+            createdAtTs: newsletterMetadata.newsletterCreationTimeMetadataMixin ? newsletterMetadata.newsletterCreationTimeMetadataMixin.creationTimeValue : null,
             titleMetadata: {
-                title: response.newsletterNameMetadataMixin.nameElementValue,
-                updatedAtTs: response.newsletterNameMetadataMixin.nameUpdateTime
+                title: newsletterMetadata.newsletterNameMetadataMixin.nameElementValue,
+                updatedAtTs: newsletterMetadata.newsletterNameMetadataMixin.nameUpdateTime
             },
             descriptionMetadata: {
-                description: response.newsletterDescriptionMetadataMixin.descriptionQueryDescriptionResponseMixin.elementValue,
-                updatedAtTs: response.newsletterDescriptionMetadataMixin.descriptionQueryDescriptionResponseMixin.updateTime
+                description: newsletterMetadata.newsletterDescriptionMetadataMixin.descriptionQueryDescriptionResponseMixin.elementValue,
+                updatedAtTs: newsletterMetadata.newsletterDescriptionMetadataMixin.descriptionQueryDescriptionResponseMixin.updateTime
             },
-            inviteLink: `https://whatsapp.com/channel/${response.newsletterInviteLinkMetadataMixin.inviteCode}`,
+            inviteLink: `https://whatsapp.com/channel/${newsletterMetadata.newsletterInviteLinkMetadataMixin.inviteCode}`,
             membershipType: window.Store.ChannelUtils.getRoleByIdentifier(inviteCode),
-            stateType: response.newsletterStateMetadataMixin.stateType,
+            stateType: newsletterMetadata.newsletterStateMetadataMixin.stateType,
             pictureUrl: picUrl ? `https://pps.whatsapp.net${picUrl}` : null,
-            subscribersCount: response.newsletterSubscribersMetadataMixin.subscribersCount,
-            isVerified: response.newsletterVerificationMetadataMixin.verificationState === 'verified'
+            subscribersCount: newsletterMetadata.newsletterSubscribersMetadataMixin.subscribersCount,
+            isVerified: newsletterMetadata.newsletterVerificationMetadataMixin.verificationState === 'verified'
         };
     };
 
