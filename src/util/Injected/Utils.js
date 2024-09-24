@@ -850,9 +850,7 @@ exports.LoadUtils = () => {
                     .require('WAWebCollections')
                     .WAWebNewsletterCollection.get(chatId);
                 if (!chat) {
-                    await window
-                        .require('WAWebLoadNewsletterPreviewChatAction')
-                        .loadNewsletterPreviewChat(chatId);
+                    await window.WWebJS.getChannelMetadata(chatId);
                     chat = await window
                         .require('WAWebCollections')
                         .WAWebNewsletterCollection.find(chatWid);
