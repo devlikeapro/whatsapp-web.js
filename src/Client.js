@@ -1760,22 +1760,20 @@ class Client extends EventEmitter {
     /**
      * Gets a {@link Channel} instance by invite code
      * @param {string} inviteCode The code that comes after the 'https://whatsapp.com/channel/'
-     * @returns {Promise<Channel>}
+     * @returns {Promise<any>}
      */
     async getChannelByInviteCode(inviteCode) {
-        const channel = await this.pupPage.evaluate(async (inviteCode) => {
+        return await this.pupPage.evaluate(async (inviteCode) => {
             let channelMetadata;
             try {
                 channelMetadata =
                     await window.WWebJS.getChannelMetadata(inviteCode);
+                return channelMetadata;
             } catch (err) {
                 if (err.name === 'ServerStatusCodeError') return null;
                 throw err;
             }
-            return await window.WWebJS.getChat(channelMetadata.id);
         }, inviteCode);
-
-        return channel ? ChatFactory.create(this, channel) : undefined;
     }
 
     /**
