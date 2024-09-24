@@ -36,6 +36,12 @@ class Label extends Base {
          * @type {string}
          */
         this.hexColor = labelData.hexColor;
+
+        /**
+         * Label color index
+         * @type {number}
+         */
+        this.colorIndex = labelData.colorIndex;
     }
     /**
      * Get all chats that have been assigned this Label
