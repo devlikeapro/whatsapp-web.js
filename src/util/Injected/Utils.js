@@ -879,40 +879,47 @@ exports.LoadUtils = () => {
         const role = window
             .require('WAWebNewsletterModelUtils')
             .getRoleByIdentifier(inviteCode);
-        const response = await window
-            .require('WAWebNewsletterMetadataQueryJob')
-            .queryNewsletterMetadataByInviteCode(inviteCode, role);
+        const previewData = await window
+            .require('WAWebNewsletterPreviewJob')
+            .getNewsletterPreviewData(inviteCode, role);
+        const newsletterMetadata = previewData.newsletterMetadata;
 
         const picUrl =
-            response.newsletterPictureMetadataMixin?.picture[0]
+            newsletterMetadata.newsletterPictureMetadataMixin?.picture[0]
                 ?.queryPictureDirectPathOrEmptyResponseMixinGroup.value
                 .directPath;
 
         return {
-            id: response.idJid,
-            createdAtTs:
-                response.newsletterCreationTimeMetadataMixin.creationTimeValue,
+            id: newsletterMetadata.idJid,
+            createdAtTs: newsletterMetadata.newsletterCreationTimeMetadataMixin
+                ? newsletterMetadata.newsletterCreationTimeMetadataMixin
+                      .creationTimeValue
+                : null,
             titleMetadata: {
-                title: response.newsletterNameMetadataMixin.nameElementValue,
+                title: newsletterMetadata.newsletterNameMetadataMixin
+                    .nameElementValue,
                 updatedAtTs:
-                    response.newsletterNameMetadataMixin.nameUpdateTime,
+                    newsletterMetadata.newsletterNameMetadataMixin
+                        .nameUpdateTime,
             },
             descriptionMetadata: {
                 description:
-                    response.newsletterDescriptionMetadataMixin
+                    newsletterMetadata.newsletterDescriptionMetadataMixin
                         .descriptionQueryDescriptionResponseMixin.elementValue,
                 updatedAtTs:
-                    response.newsletterDescriptionMetadataMixin
+                    newsletterMetadata.newsletterDescriptionMetadataMixin
                         .descriptionQueryDescriptionResponseMixin.updateTime,
             },
-            inviteLink: `https://whatsapp.com/channel/${response.newsletterInviteLinkMetadataMixin.inviteCode}`,
+            inviteLink: `https://whatsapp.com/channel/${newsletterMetadata.newsletterInviteLinkMetadataMixin.inviteCode}`,
             membershipType: role,
-            stateType: response.newsletterStateMetadataMixin.stateType,
+            stateType:
+                newsletterMetadata.newsletterStateMetadataMixin.stateType,
             pictureUrl: picUrl ? `https://pps.whatsapp.net${picUrl}` : null,
             subscribersCount:
-                response.newsletterSubscribersMetadataMixin.subscribersCount,
+                newsletterMetadata.newsletterSubscribersMetadataMixin
+                    .subscribersCount,
             isVerified:
-                response.newsletterVerificationMetadataMixin
+                newsletterMetadata.newsletterVerificationMetadataMixin
                     .verificationState === 'verified',
         };
     };
