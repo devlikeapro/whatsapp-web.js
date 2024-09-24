@@ -1186,6 +1186,8 @@ declare namespace WAWebJS {
         id: string,
         /** Color assigned to the label */
         hexColor: string,
+        /** Color index for the label */
+        colorIndex: number,
 
         /** Get all chats that have been assigned this Label */
         getChats: () => Promise<Chat[]>
