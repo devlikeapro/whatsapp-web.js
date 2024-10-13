@@ -433,7 +433,7 @@ class Message extends Base {
     async forward(chat) {
         const chatId = typeof chat === 'string' ? chat : chat.id._serialized;
 
-        await this.client.pupPage.evaluate(async (msgId, chatId) => {
+        return await this.client.pupPage.evaluate(async (msgId, chatId) => {
             return window.WWebJS.forwardMessage(chatId, msgId);
         }, this.id._serialized, chatId);
     }
