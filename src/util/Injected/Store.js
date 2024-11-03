@@ -196,6 +196,7 @@ exports.ExposeStore = () => {
         ...window.require('WAWebSaveContactAction'),
         ...window.require('WAWebDeleteContactAction')
     };
+    window.Store.SendStatus = window.require('WAWebSendStatusMsgAction');
 
     if (!window.Store.Chat._find || !window.Store.Chat.findImpl) {
         window.Store.Chat._find = e => {
