@@ -869,6 +869,7 @@ exports.LoadUtils = () => {
                         .require('WAWebCollections')
                         .WAWebNewsletterCollection.find(chatWid);
                 }
+                chat.isChannel = true;
             } catch (ignoredError) {
                 chat = null;
             }
@@ -986,13 +987,15 @@ exports.LoadUtils = () => {
             model.isReadOnly = chat.groupMetadata.announce;
         }
 
-        if (chat.newsletterMetadata) {
+        isChannel = chat.id.server === 'newsletter';
+        if (isChannel) {
             const newsletterMetadata =
                 window.require('WAWebCollections')
                     .NewsletterMetadataCollection ||
                 window.require('WAWebCollections')
                     .WAWebNewsletterMetadataCollection;
             await newsletterMetadata.update(chat.id);
+            model.isChannel = true;
             model.channelMetadata = chat.newsletterMetadata.serialize();
             model.channelMetadata.createdAtTs =
                 chat.newsletterMetadata.creationTime;
