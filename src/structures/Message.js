@@ -335,11 +335,13 @@ class Message extends Base {
             );
             this.pollInvalidated = data.pollInvalidated;
             this.isSentCagPollCreation = data.isSentCagPollCreation;
-            this.messageSecret = data.messageSecret
-                ? Object.keys(data.messageSecret).map(
-                      (key) => data.messageSecret[key],
-                  )
-                : [];
+            if (data.messageSecret) {
+                this.messageSecret = data.messageSecret
+                    ? Object.keys(data.messageSecret).map(
+                          (key) => data.messageSecret[key],
+                      )
+                    : [];
+            }
         }
 
         return super._patch(data);
