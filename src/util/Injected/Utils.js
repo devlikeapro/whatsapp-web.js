@@ -589,7 +589,8 @@ exports.LoadUtils = () => {
             model.isReadOnly = chat.groupMetadata.announce;
         }
 
-        if (chat.newsletterMetadata) {
+        isChannel = chat.id.server === 'newsletter';
+        if (isChannel) {
             model.isChannel = true;
             await window.Store.NewsletterMetadataCollection.update(chat.id);
             model.channelMetadata = chat.newsletterMetadata.serialize();
