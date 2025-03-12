@@ -437,6 +437,9 @@ exports.LoadUtils = () => {
         const lidUser = getMaybeMeLidUser();
         const meUser = getMaybeMePnUser();
         const newId = await window.require('WAWebMsgKey').newId();
+        if (typeof window.onNewMessageId === 'function') {
+            window.onNewMessageId(newId);
+        }
         let from = chat.id.isLid() ? lidUser : meUser;
         let participant;
 
