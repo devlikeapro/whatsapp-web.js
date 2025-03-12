@@ -229,6 +229,9 @@ exports.LoadUtils = () => {
         const lidUser = window.Store.User.getMaybeMeLidUser();
         const meUser = window.Store.User.getMaybeMeUser();
         const newId = await window.Store.MsgKey.newId();
+        if (typeof window.onNewMessageId === 'function') {
+            window.onNewMessageId(newId);
+        }
         let from = chat.id.isLid() ? lidUser : meUser;
         let participant;
 
