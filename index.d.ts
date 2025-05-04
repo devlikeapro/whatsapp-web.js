@@ -367,6 +367,16 @@ declare namespace WAWebJS {
             ack: MessageAck
         ) => void): this
         
+        /** Emitted when an message info event occurs */
+        on(event: 'message_info', listener: (
+            data: any
+        ) => void): this
+
+        /** Emitted when an receipt message tag */
+        on(event: 'tag:receipt', listener: (
+            data: any
+        ) => void): this
+        
         /** Emitted when an ack event occurrs on message type */
         on(event: 'message_edit', listener: (
             /** The message that was affected */
@@ -792,6 +802,7 @@ declare namespace WAWebJS {
         MESSAGE_REVOKED_EVERYONE = 'message_revoke_everyone',
         MESSAGE_REVOKED_ME = 'message_revoke_me',
         MESSAGE_ACK = 'message_ack',
+        TAG_RECEIPT = 'tag:receipt',
         MESSAGE_EDIT = 'message_edit',
         MEDIA_UPLOADED = 'media_uploaded',
         CONTACT_CHANGED = 'contact_changed',

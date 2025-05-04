@@ -514,6 +514,16 @@ class Client extends EventEmitter {
             this.emit(Events.MESSAGE_ACK, message, ack);
 
         });
+        
+        await exposeFunctionIfAbsent(this.pupPage, 'onTag', (data) => {
+
+            /**
+             * Emitted when an message info event occurs
+             */
+            const event = `tag:${data.tag}`;
+            this.emit(event, data);
+
+        });
 
         await exposeFunctionIfAbsent(this.pupPage, 'onChatUnreadCountEvent', async (data) =>{
             const chat = await this.getChatById(data.id);
@@ -683,6 +693,18 @@ class Client extends EventEmitter {
         });
 
         await this.pupPage.evaluate(() => {
+            const tags = ['receipt'];
+            if (!window.decodeStanzaBack) {
+                window.decodeStanzaBack = window.Store.SocketWap.decodeStanza;
+                window.Store.SocketWap.decodeStanza = async (...args) => {
+                    const result = await window.decodeStanzaBack(...args);
+                    if (tags.includes(result?.tag)){
+                        window.onTag(result);
+                    }
+                    return result;
+                };
+            }
+            
             window.Store.Msg.on('change', (msg) => { window.onChangeMessageEvent(window.WWebJS.getMessageModel(msg)); });
             window.Store.Msg.on('change:type', (msg) => { window.onChangeMessageTypeEvent(window.WWebJS.getMessageModel(msg)); });
             window.Store.Msg.on('change:ack', (msg, ack) => { window.onMessageAckEvent(window.WWebJS.getMessageModel(msg), ack); });
