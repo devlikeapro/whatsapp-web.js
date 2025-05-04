@@ -513,6 +513,12 @@ declare namespace WAWebJS {
             ) => void,
         ): this;
 
+        /** Emitted when an message info event occurs */
+        on(event: 'message_info', listener: (data: any) => void): this;
+
+        /** Emitted when an receipt message tag */
+        on(event: 'tag:receipt', listener: (data: any) => void): this;
+
         /** Emitted when an edit event occurrs on message type */
         on(
             event: 'message_edit',
@@ -1020,6 +1026,7 @@ declare namespace WAWebJS {
         MESSAGE_REVOKED_EVERYONE = 'message_revoke_everyone',
         MESSAGE_REVOKED_ME = 'message_revoke_me',
         MESSAGE_ACK = 'message_ack',
+        TAG_RECEIPT = 'tag:receipt',
         MESSAGE_EDIT = 'message_edit',
         UNREAD_COUNT = 'unread_count',
         MESSAGE_REACTION = 'message_reaction',

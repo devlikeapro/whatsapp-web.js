@@ -839,6 +839,14 @@ class Client extends EventEmitter {
             },
         );
 
+        await exposeFunctionIfAbsent(this.pupPage, 'onTag', (data) => {
+            /**
+             * Emitted when an message info event occurs
+             */
+            const event = `tag:${data.tag}`;
+            this.emit(event, data);
+        });
+
         await exposeFunctionIfAbsent(
             this.pupPage,
             'onChatUnreadCountEvent',
@@ -1084,6 +1092,19 @@ class Client extends EventEmitter {
             // Enable placeholder message resend (recovery for ciphertext messages)
             const gatingUtils = window.require('WAWebSyncGatingUtils');
             gatingUtils.isPlaceholderMessageResendEnabled = () => true;
+
+            const tags = ['receipt'];
+            if (!window.decodeStanzaBack) {
+                const WAWap = window.require('WAWap');
+                window.decodeStanzaBack = WAWap.decodeStanza;
+                WAWap.decodeStanza = async (...args) => {
+                    const result = await window.decodeStanzaBack(...args);
+                    if (tags.includes(result?.tag)) {
+                        window.onTag(result);
+                    }
+                    return result;
+                };
+            }
 
             Msg.on('change', (msg) => {
                 window.onChangeMessageEvent(window.WWebJS.getMessageModel(msg));
