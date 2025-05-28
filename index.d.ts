@@ -382,6 +382,11 @@ declare namespace WAWebJS {
             data: any
         ) => void): this
         
+        /** Emitted when an chatsate tag */
+        on(event: 'tag:chatstate', listener: (
+            data: any
+        ) => void): this
+        
         /** Emitted when an ack event occurrs on message type */
         on(event: 'message_edit', listener: (
             /** The message that was affected */
@@ -809,6 +814,7 @@ declare namespace WAWebJS {
         MESSAGE_ACK = 'message_ack',
         TAG_RECEIPT = 'tag:receipt',
         TAG_PRESENCE = 'tag:presence',
+        TAG_CHATSTATE = 'tag:chatstate',
         MESSAGE_EDIT = 'message_edit',
         MEDIA_UPLOADED = 'media_uploaded',
         CONTACT_CHANGED = 'contact_changed',
