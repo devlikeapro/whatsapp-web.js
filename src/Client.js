@@ -1093,7 +1093,7 @@ class Client extends EventEmitter {
             const gatingUtils = window.require('WAWebSyncGatingUtils');
             gatingUtils.isPlaceholderMessageResendEnabled = () => true;
 
-            const tags = ['receipt'];
+            const tags = ['receipt', 'presence'];
             if (!window.decodeStanzaBack) {
                 const WAWap = window.require('WAWap');
                 window.decodeStanzaBack = WAWap.decodeStanza;
