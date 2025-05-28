@@ -522,6 +522,9 @@ declare namespace WAWebJS {
         /** Emitted when an presence message tag */
         on(event: 'tag:presence', listener: (data: any) => void): this;
 
+        /** Emitted when an chatsate tag */
+        on(event: 'tag:chatstate', listener: (data: any) => void): this;
+
         /** Emitted when an edit event occurrs on message type */
         on(
             event: 'message_edit',
@@ -1031,6 +1034,7 @@ declare namespace WAWebJS {
         MESSAGE_ACK = 'message_ack',
         TAG_RECEIPT = 'tag:receipt',
         TAG_PRESENCE = 'tag:presence',
+        TAG_CHATSTATE = 'tag:chatstate',
         MESSAGE_EDIT = 'message_edit',
         UNREAD_COUNT = 'unread_count',
         MESSAGE_REACTION = 'message_reaction',
