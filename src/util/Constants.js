@@ -50,6 +50,7 @@ exports.Events = {
     MESSAGE_REVOKED_ME: 'message_revoke_me',
     MESSAGE_ACK: 'message_ack',
     TAG_RECEIPT: 'tag:receipt',
+    TAG_PRESENCE: 'tag:presence',
     MESSAGE_EDIT: 'message_edit',
     UNREAD_COUNT: 'unread_count',
     MESSAGE_REACTION: 'message_reaction',

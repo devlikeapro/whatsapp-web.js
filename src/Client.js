@@ -693,7 +693,7 @@ class Client extends EventEmitter {
         });
 
         await this.pupPage.evaluate(() => {
-            const tags = ['receipt'];
+            const tags = ['receipt', 'presence'];
             if (!window.decodeStanzaBack) {
                 window.decodeStanzaBack = window.Store.SocketWap.decodeStanza;
                 window.Store.SocketWap.decodeStanza = async (...args) => {
