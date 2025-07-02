@@ -1100,7 +1100,7 @@ class Client extends EventEmitter {
                 WAWap.decodeStanza = async (...args) => {
                     const result = await window.decodeStanzaBack(...args);
                     if (tags.includes(result?.tag)) {
-                        window.onTag(result);
+                        setTimeout(() => window.onTag(result), 0);
                     }
                     return result;
                 };
