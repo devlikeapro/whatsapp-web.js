@@ -99,6 +99,7 @@ exports.ExposeStore = () => {
     window.Store.AddonReactionTable = window.require('WAWebAddonReactionTableMode').reactionTableMode;
     window.Store.ChatGetters = window.require('WAWebChatGetters');
     window.Store.PinnedMsgUtils = window.require('WAWebSendPinMessageAction');
+    window.Store.WAWebStreamModel = window.require('WAWebStreamModel');
     
     window.Store.Settings = {
         ...window.require('WAWebUserPrefsGeneral'),
