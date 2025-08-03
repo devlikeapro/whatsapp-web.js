@@ -742,18 +742,6 @@ class Client extends EventEmitter {
         });
 
         await this.pupPage.evaluate(() => {
-            const tags = ['receipt', 'presence', 'chatstate'];
-            if (!window.decodeStanzaBack) {
-                window.decodeStanzaBack = window.Store.SocketWap.decodeStanza;
-                window.Store.SocketWap.decodeStanza = async (...args) => {
-                    const result = await window.decodeStanzaBack(...args);
-                    if (tags.includes(result?.tag)){
-                        setTimeout(() => window.onTag(result), 0);
-                    }
-                    return result;
-                };
-            }
-            
             window.Store.Msg.on('change', (msg) => { window.onChangeMessageEvent(window.WWebJS.getMessageModel(msg)); });
             window.Store.Msg.on('change:type', (msg) => { window.onChangeMessageTypeEvent(window.WWebJS.getMessageModel(msg)); });
             window.Store.Msg.on('change:ack', (msg, ack) => { window.onMessageAckEvent(window.WWebJS.getMessageModel(msg), ack); });
