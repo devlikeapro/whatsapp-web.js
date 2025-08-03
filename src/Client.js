@@ -1093,19 +1093,6 @@ class Client extends EventEmitter {
             const gatingUtils = window.require('WAWebSyncGatingUtils');
             gatingUtils.isPlaceholderMessageResendEnabled = () => true;
 
-            const tags = ['receipt', 'presence', 'chatstate'];
-            if (!window.decodeStanzaBack) {
-                const WAWap = window.require('WAWap');
-                window.decodeStanzaBack = WAWap.decodeStanza;
-                WAWap.decodeStanza = async (...args) => {
-                    const result = await window.decodeStanzaBack(...args);
-                    if (tags.includes(result?.tag)) {
-                        setTimeout(() => window.onTag(result), 0);
-                    }
-                    return result;
-                };
-            }
-
             Msg.on('change', (msg) => {
                 window.onChangeMessageEvent(window.WWebJS.getMessageModel(msg));
             });
