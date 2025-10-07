@@ -744,6 +744,13 @@ class Message extends Base {
 
         return edittedEventMsg && new Message(this.client, edittedEventMsg);
     }
+    /**
+     * Returns the PollVote this poll message
+     * @returns {Promise<PollVote[]>}
+     */
+    async getPollVotes() {
+        return await this.client.getPollVotes(this.id._serialized);
+    }
 }
 
 module.exports = Message;
