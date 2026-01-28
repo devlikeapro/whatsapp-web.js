@@ -15,7 +15,7 @@ async function exposeFunctionIfAbsent(page, name, fn) {
         return !!window[name];
     }, name);
     if (exist) {
-        return;
+        await page.removeExposedFunction(name);
     }
     await page.exposeFunction(name, fn);
 }
