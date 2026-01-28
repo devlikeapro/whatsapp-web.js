@@ -17,7 +17,28 @@ async function exposeFunctionIfAbsent(page, name, fn) {
     if (exist) {
         await page.removeExposedFunction(name);
     }
-    await page.exposeFunction(name, fn);
+    await page.exposeFunction(name, log(fn));
+}
+
+function log(fn, msg = 'Error') {
+    return function (...args) {
+        try {
+            const result = fn(...args);
+
+            // async function (or returned Promise)
+            if (result && typeof result.then === 'function') {
+                return result.catch((err) => {
+                    console.error(`[W] ${msg}`, err);
+                    throw err;
+                });
+            }
+
+            return result;
+        } catch (err) {
+            console.error(`[W] ${msg}`, err);
+            throw err;
+        }
+    };
 }
 
 module.exports = { exposeFunctionIfAbsent };
