@@ -1064,6 +1064,9 @@ class Client extends EventEmitter {
             const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
 
             if (!chat) return null;
+            if (chat.isChannel) {
+                sendSeen = false
+            }
 
             if (sendSeen) {
                 await window.WWebJS.sendSeen(chatId);
