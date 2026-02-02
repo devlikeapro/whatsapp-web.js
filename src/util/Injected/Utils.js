@@ -669,10 +669,10 @@ exports.LoadUtils = () => {
         isChannel = chat.id.server === 'newsletter';
         if (isChannel) {
             const newsletterMetadata = window.Store.NewsletterMetadataCollection || window.Store.WAWebNewsletterMetadataCollection;
-            await newsletterMetadata.update(chat.id);
+            const metadata = await newsletterMetadata.get(chat.id);
             model.isChannel = true;
-            model.channelMetadata = chat.newsletterMetadata.serialize();
-            model.channelMetadata.createdAtTs = chat.newsletterMetadata.creationTime;
+            model.channelMetadata = metadata?.serialize();
+            model.channelMetadata.createdAtTs = metadata.creationTime;
         }
 
         model.lastMessage = null;
