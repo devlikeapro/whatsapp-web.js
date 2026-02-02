@@ -1620,6 +1620,9 @@ class Client extends EventEmitter {
                 });
 
                 if (!chat) return null;
+                if (chat.isChannel) {
+                    sendSeen = false;
+                }
 
                 if (sendSeen) {
                     await window.WWebJS.sendSeen(chatId);
