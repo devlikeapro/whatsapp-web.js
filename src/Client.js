@@ -741,8 +741,20 @@ class Client extends EventEmitter {
             window.Store.AppState.on('change:state', (_AppState, state) => { window.onAppStateChangedEvent(state); });
             window.Store.Conn.on('change:battery', (state) => { window.onBatteryStateChangedEvent(state); });
             const callCollection = (window.Store && window.Store.Call) || (window.Store && window.Store.WAWebCallCollection);
-            if (callCollection && typeof callCollection.on === 'function') {
-                callCollection.on('add', (call) => { window.onIncomingCall(call); });
+            if (callCollection) {
+                if (typeof callCollection.processIncomingCall === 'function') {
+                    const registeredCalls = new Set();
+                    const originalProcessIncomingCall = callCollection.processIncomingCall.bind(callCollection);
+                    callCollection.processIncomingCall = function (...args) {
+                        const call = originalProcessIncomingCall(...args);
+                        if (!call || registeredCalls.has(call.id)) return call;
+                        registeredCalls.add(call.id);
+                        window.onIncomingCall(call);
+                        return call;
+                    };
+                } else if (typeof callCollection.on === 'function') {
+                    callCollection.on('add', (call) => { window.onIncomingCall(call); });
+                }
             }
             window.Store.Chat.on('remove', async (chat) => { window.onRemoveChatEvent(await window.WWebJS.getChatModel(chat)); });
             window.Store.Chat.on('change:archive', async (chat, currState, prevState) => { window.onArchiveChatEvent(await window.WWebJS.getChatModel(chat), currState, prevState); });
