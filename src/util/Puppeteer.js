@@ -11,13 +11,15 @@
  * @param {Function} fn
  */
 async function exposeFunctionIfAbsent(page, name, fn) {
-    const exist = await page.evaluate((name) => {
-        return !!window[name];
-    }, name);
-    if (exist) {
-        await page.removeExposedFunction(name);
+    try {
+        await page.exposeFunction(name, log(fn));
+    } catch (err) {
+        if (err?.message?.includes('already exists')) {
+            console.warn(`[W] exposeFunctionIfAbsent: '${name}' is already exposed, skipping`, err);
+            return;
+        }
+        throw err;
     }
-    await page.exposeFunction(name, log(fn));
 }
 
 function log(fn, msg = 'Error') {
