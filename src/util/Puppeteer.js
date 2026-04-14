@@ -15,7 +15,7 @@ async function exposeFunctionIfAbsent(page, name, fn) {
         await page.exposeFunction(name, log(fn));
     } catch (err) {
         if (err?.message?.includes('already exists')) {
-            console.warn(`[W] exposeFunctionIfAbsent: '${name}' is already exposed, skipping`, err);
+            console.warn(`[W] exposeFunctionIfAbsent: '${name}' is already exposed, skipping`, err.toString());
             return;
         }
         throw err;
