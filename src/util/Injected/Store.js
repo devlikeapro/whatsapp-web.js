@@ -197,7 +197,7 @@ exports.ExposeStore = () => {
         ...window.require('WAMediaCalculateFilehash')
     };
     window.Store.ChannelSubscribers = {
-        ...window.require('WAWebMexFetchNewsletterSubscribersJob'),
+        // ...window.require('WAWebMexFetchNewsletterSubscribersJob'),
         ...window.require('WAWebNewsletterSubscriberListAction')
     };
     window.Store.AddressbookContactUtils = {
