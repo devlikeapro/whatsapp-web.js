@@ -197,8 +197,8 @@ class Client extends EventEmitter {
 
         await exposeFunctionIfAbsent(this.pupPage, 'onAuthAppStateChangedEvent', async (state) => {
             if (state == 'UNPAIRED_IDLE' && !pairWithPhoneNumber.phoneNumber) {
-                // refresh qr code
-                window.Store.Cmd.refreshQR();
+                // refresh qr code - must execute in browser context, not Node.js
+                await this.pupPage.evaluate(() => window.Store.Cmd.refreshQR());
             }
         });
 
