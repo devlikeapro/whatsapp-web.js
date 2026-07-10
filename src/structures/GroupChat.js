@@ -597,7 +597,7 @@ class GroupChat extends Chat {
         const codeRes = await this.client.pupPage.evaluate((chatId) => {
             const chatWid = window.require('WAWebWidFactory').createWid(chatId);
             return window
-                .require('WAWebGroupQueryJob')
+                .require('WAWebGroupInviteJob')
                 .resetGroupInviteCode(chatWid);
         }, this.id._serialized);
 
