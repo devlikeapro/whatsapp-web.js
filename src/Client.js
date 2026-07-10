@@ -1988,7 +1988,7 @@ class Client extends EventEmitter {
                         .require('WAWebWidFactory')
                         .createWid(userId);
                     await window
-                        .require('WAWebDemoteNewsletterAdminAction')
+                        .require('WAWebNewsletterDemoteAdminJob')
                         .demoteNewsletterAdmin(channelId, userWid);
                     return true;
                 } catch (err) {
@@ -2692,7 +2692,7 @@ class Client extends EventEmitter {
                             .getMeContact();
                         meContact &&
                             (await window
-                                .require('WAWebNewsletterDemoteAdminJob')
+                                .require('WAWebDemoteNewsletterAdminAction')
                                 .demoteNewsletterAdminAction(
                                     channel,
                                     meContact,
