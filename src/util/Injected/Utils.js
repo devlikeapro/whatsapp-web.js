@@ -895,7 +895,7 @@ exports.LoadUtils = () => {
 
     window.WWebJS.getChannelMetadata = async (inviteCode) => {
         const role = window
-            .require('WAWebNewsletterModelUtils')
+            .require('WAWebNewsletterRoleIdentifier')
             .getRoleByIdentifier(inviteCode);
         const previewData = await window
             .require('WAWebNewsletterPreviewJob')
