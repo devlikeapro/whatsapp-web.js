@@ -2676,9 +2676,12 @@ class Client extends EventEmitter {
                         .require('WAWebCollections')
                         .Contact.find(newOwnerId));
                 if (!channel.newsletterMetadata) {
-                    await window
-                        .require('WAWebCollections')
-                        .NewsletterMetadataCollection.update(channel.id);
+                    const newsletterMetadata =
+                        window.require('WAWebCollections')
+                            .NewsletterMetadataCollection ||
+                        window.require('WAWebCollections')
+                            .WAWebNewsletterMetadataCollection;
+                    await newsletterMetadata.update(channel.id);
                 }
 
                 try {
