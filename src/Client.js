@@ -1399,13 +1399,16 @@ class Client extends EventEmitter {
         (deviceName || browserName) &&
             (await this.pupPage.evaluate(
                 (deviceName, browserName) => {
-                    const func = window.require('WAWebMiscBrowserUtils').info;
-                    window.require('WAWebMiscBrowserUtils').info = () => {
-                        return {
-                            ...func(),
-                            ...(deviceName ? { os: deviceName } : {}),
-                            ...(browserName ? { name: browserName } : {}),
-                        };
+                    // WAWebBrowserInfo (the former WAWebMiscBrowserUtils.info) is a default
+                    // export, so it cannot be replaced on the module namespace. Patch its only
+                    // source instead: WAWebUA's parser result.
+                    const { parser } = window.require('WAWebUA').UA;
+                    const getResult = parser.getResult.bind(parser);
+                    parser.getResult = () => {
+                        const result = getResult();
+                        deviceName && (result.os.name = deviceName);
+                        browserName && (result.browser.name = browserName);
+                        return result;
                     };
                 },
                 deviceName,
