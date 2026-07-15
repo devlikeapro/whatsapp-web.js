@@ -1,6 +1,7 @@
 'use strict';
 
 const Base = require('./Base');
+const { GetSerializedWid } = require('../util/Serialized');
 const Message = require('./Message');
 
 /**
@@ -29,6 +30,7 @@ class Channel extends Base {
          * ID that represents the channel
          * @type {ChannelId}
          */
+        GetSerializedWid(data.id);
         this.id = data.id;
 
         /**

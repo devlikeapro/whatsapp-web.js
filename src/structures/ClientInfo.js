@@ -1,6 +1,7 @@
 'use strict';
 
 const Base = require('./Base');
+const { GetSerializedWid } = require('../util/Serialized');
 
 /**
  * Current connection information
@@ -24,6 +25,7 @@ class ClientInfo extends Base {
          * Current user ID
          * @type {object}
          */
+        GetSerializedWid(data.wid);
         this.wid = data.wid;
 
         /**

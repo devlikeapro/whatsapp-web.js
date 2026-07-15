@@ -34,6 +34,7 @@ const {
     ScheduledEvent,
 } = require('./structures');
 const NoAuth = require('./authStrategies/NoAuth');
+const { GetSerializedWid } = require('./util/Serialized');
 const { exposeFunctionIfAbsent } = require('./util/Puppeteer');
 
 /**
@@ -1257,7 +1258,8 @@ class Client extends EventEmitter {
                             const parentMsgKey = reaction.reactionParentKey;
                             const timestamp = reaction.reactionTimestamp / 1000;
                             const sender = reaction.author ?? reaction.from;
-                            const senderUserJid = sender._serialized;
+                            const senderUserJid =
+                                window.WWebJS.GetSerialized(sender);
 
                             return {
                                 ...reaction,
@@ -1285,14 +1287,15 @@ class Client extends EventEmitter {
                             const parentMsgKey = vote.pollUpdateParentKey;
                             const timestamp = vote.t / 1000;
                             const sender = vote.author ?? vote.from;
-                            const senderUserJid = sender._serialized;
+                            const senderUserJid =
+                                window.WWebJS.GetSerialized(sender);
 
-                            let parentMessage = Msg.get(
-                                parentMsgKey._serialized,
-                            );
+                            const parentMsgKeyId =
+                                window.WWebJS.GetSerialized(parentMsgKey);
+                            let parentMessage = Msg.get(parentMsgKeyId);
                             if (!parentMessage) {
                                 const fetched = await Msg.getMessagesById([
-                                    parentMsgKey._serialized,
+                                    parentMsgKeyId,
                                 ]);
                                 parentMessage = fetched?.messages?.[0] || null;
                             }
@@ -1925,7 +1928,7 @@ class Client extends EventEmitter {
                 .joinGroupViaInvite(inviteCode);
         }, inviteCode);
 
-        return res.gid._serialized;
+        return GetSerializedWid(res.gid);
     }
 
     /**
@@ -2469,7 +2472,9 @@ class Client extends EventEmitter {
                         (participant.wid = window
                             .require('WAWebApiContact')
                             .getPhoneNumber(participant.wid));
-                    const participantId = participant.wid._serialized;
+                    const participantId = window.WWebJS.GetSerialized(
+                        participant.wid,
+                    );
                     const statusCode = participant.error || 200;
 
                     if (autoSendInviteV4 && statusCode === 403) {
@@ -2485,7 +2490,9 @@ class Client extends EventEmitter {
                                     (await window
                                         .require('WAWebCollections')
                                         .Chat.find(participant.wid)),
-                                createGroupResult.wid._serialized,
+                                window.WWebJS.GetSerialized(
+                                    createGroupResult.wid,
+                                ),
                                 createGroupResult.subject,
                                 participant.invite_code,
                                 participant.invite_code_exp,
@@ -2962,7 +2969,7 @@ class Client extends EventEmitter {
             let chatIds = window
                 .require('WAWebCollections')
                 .Blocklist.getModelsArray()
-                .map((a) => a.id._serialized);
+                .map((a) => window.WWebJS.GetSerialized(a.id));
             return Promise.all(
                 chatIds.map((id) => window.WWebJS.getContact(id)),
             );
@@ -3023,7 +3030,9 @@ class Client extends EventEmitter {
                 );
                 const chats = window
                     .require('WAWebCollections')
-                    .Chat.filter((e) => chatIds.includes(e.id._serialized));
+                    .Chat.filter((e) =>
+                        chatIds.includes(window.WWebJS.GetSerialized(e.id)),
+                    );
 
                 let actions = labels.map((label) => ({
                     id: label.id,
@@ -3404,8 +3413,8 @@ class Client extends EventEmitter {
                         await window.WWebJS.enforceLidAndPnRetrieval(userId);
 
                     return {
-                        lid: lid?._serialized,
-                        pn: phone?._serialized,
+                        lid: window.WWebJS.GetSerialized(lid),
+                        pn: window.WWebJS.GetSerialized(phone),
                     };
                 }),
             );
@@ -3476,9 +3485,11 @@ class Client extends EventEmitter {
 
             if (!serialized) return null;
 
-            serialized.chatId = window
-                .require('WAWebJidToWid')
-                .userJidToUserWid(serialized.chatJid)._serialized;
+            serialized.chatId = window.WWebJS.GetSerialized(
+                window
+                    .require('WAWebJidToWid')
+                    .userJidToUserWid(serialized.chatJid),
+            );
             delete serialized.chatJid;
 
             return serialized;
@@ -3499,7 +3510,7 @@ class Client extends EventEmitter {
         const pollVotes = await this.pupPage.evaluate(async (msg) => {
             const msgKey = window
                 .require('WAWebMsgKey')
-                .fromString(msg.id._serialized);
+                .fromString(window.WWebJS.GetSerialized(msg.id));
             let pollVotes = await window
                 .require('WAWebPollsVotesSchema')
                 .getTable()

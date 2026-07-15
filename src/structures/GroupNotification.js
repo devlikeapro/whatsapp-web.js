@@ -1,6 +1,7 @@
 'use strict';
 
 const Base = require('./Base');
+const { GetSerializedWid, GetSerializedMsgKey } = require('../util/Serialized');
 
 /**
  * Represents a GroupNotification on WhatsApp
@@ -18,6 +19,7 @@ class GroupNotification extends Base {
          * ID that represents the groupNotification
          * @type {object}
          */
+        GetSerializedMsgKey(data.id);
         this.id = data.id;
 
         /**
@@ -45,7 +47,7 @@ class GroupNotification extends Base {
          */
         this.chatId =
             typeof data.id.remote === 'object'
-                ? data.id.remote._serialized
+                ? GetSerializedWid(data.id.remote)
                 : data.id.remote;
 
         /**
@@ -54,7 +56,7 @@ class GroupNotification extends Base {
          */
         this.author =
             typeof data.author === 'object'
-                ? data.author._serialized
+                ? GetSerializedWid(data.author)
                 : data.author;
 
         /**

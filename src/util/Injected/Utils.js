@@ -601,7 +601,7 @@ exports.LoadUtils = () => {
 
         return window
             .require('WAWebCollections')
-            .Msg.get(newMsgKey._serialized);
+            .Msg.get(window.WWebJS.GetSerialized(newMsgKey));
     };
 
     window.WWebJS.editMessage = async (msg, content, options = {}) => {
@@ -644,7 +644,9 @@ exports.LoadUtils = () => {
         await window
             .require('WAWebSendMessageEditAction')
             .sendMessageEdit(msg, content, internalOptions);
-        return window.require('WAWebCollections').Msg.get(msg.id._serialized);
+        return window
+            .require('WAWebCollections')
+            .Msg.get(window.WWebJS.GetSerialized(msg.id));
     };
 
     window.WWebJS.toStickerData = async (mediaInfo) => {
@@ -849,9 +851,13 @@ exports.LoadUtils = () => {
 
         if (typeof msg.id.remote === 'object') {
             msg.id = Object.assign({}, msg.id, {
-                remote: msg.id.remote._serialized,
+                remote: window.WWebJS.GetSerialized(msg.id.remote),
             });
         }
+
+        // Ensure the message id carries a `_serialized` string for the Node side
+        // (WhatsApp Web renamed `_serialized` to `$1` in the 2026-07 update).
+        window.WWebJS.GetSerialized(msg.id);
 
         delete msg.pendingAckUpdate;
 
@@ -978,7 +984,7 @@ exports.LoadUtils = () => {
             model.isGroup = true;
             const chatWid = window
                 .require('WAWebWidFactory')
-                .createWid(chat.id._serialized);
+                .createWid(window.WWebJS.GetSerialized(chat.id));
             const groupMetadata =
                 window.require('WAWebCollections').GroupMetadata ||
                 window.require('WAWebCollections').WAWebGroupMetadataCollection;
@@ -1007,16 +1013,17 @@ exports.LoadUtils = () => {
 
         model.lastMessage = null;
         if (model.msgs && model.msgs.length) {
-            const lastMessage = chat.lastReceivedKey
+            const lastReceivedKeyId = chat.lastReceivedKey
+                ? window.WWebJS.GetSerialized(chat.lastReceivedKey)
+                : null;
+            const lastMessage = lastReceivedKeyId
                 ? window
                       .require('WAWebCollections')
-                      .Msg.get(chat.lastReceivedKey._serialized) ||
+                      .Msg.get(lastReceivedKeyId) ||
                   (
                       await window
                           .require('WAWebCollections')
-                          .Msg.getMessagesById([
-                              chat.lastReceivedKey._serialized,
-                          ])
+                          .Msg.getMessagesById([lastReceivedKeyId])
                   )?.messages?.[0]
                 : null;
             lastMessage &&
@@ -1346,9 +1353,9 @@ exports.LoadUtils = () => {
     };
 
     window.WWebJS.rejectCall = async (peerJid, id) => {
-        let userId = window
-            .require('WAWebUserPrefsMeUser')
-            .getMaybeMePnUser()._serialized;
+        let userId = window.WWebJS.GetSerialized(
+            window.require('WAWebUserPrefsMeUser').getMaybeMePnUser(),
+        );
 
         const stanza = window.require('WAWap').wap(
             'call',
@@ -1658,9 +1665,11 @@ exports.LoadUtils = () => {
                                       .membershipRequestsActionRejectParticipantMixins
                                       ?.value.error;
                             return {
-                                requesterId: window
-                                    .require('WAWebWidFactory')
-                                    .createWid(p.jid)._serialized,
+                                requesterId: window.WWebJS.GetSerialized(
+                                    window
+                                        .require('WAWebWidFactory')
+                                        .createWid(p.jid),
+                                ),
                                 ...(error
                                     ? {
                                           error: +error,
@@ -1677,11 +1686,14 @@ exports.LoadUtils = () => {
                     }
                 } else {
                     result.push({
-                        requesterId: window
-                            .require('WAWebJidToWid')
-                            .userJidToUserWid(
-                                participant.participantArgs[0].participantJid,
-                            )._serialized,
+                        requesterId: window.WWebJS.GetSerialized(
+                            window
+                                .require('WAWebJidToWid')
+                                .userJidToUserWid(
+                                    participant.participantArgs[0]
+                                        .participantJid,
+                                ),
+                        ),
                         message: 'ServerStatusCodeError',
                     });
                 }
@@ -1818,5 +1830,80 @@ exports.LoadUtils = () => {
             throw 'Invalid hex color';
         }
         return color;
+    };
+
+    // Serialized-ID helpers. WhatsApp Web renamed the `_serialized` property on
+    // its ID objects (Wid / MsgKey) to a minified name (`$1`) in the 2026-07
+    // update. Rather than depend on that unstable minified name, each helper
+    // reconstructs the serialized string deterministically from the object's
+    // own component keys - existing `_serialized` -> reconstruct from keys - and
+    // caches it back onto the object as `_serialized`. Keep in sync with the
+    // Node-side counterpart in `src/util/Serialized.js`.
+    const _cachedSerialized = (id) => {
+        if (id == null) return { done: true, value: id };
+        if (typeof id === 'string') return { done: true, value: id };
+        if (typeof id._serialized === 'string' && id._serialized !== '') {
+            return { done: true, value: id._serialized };
+        }
+        return { done: false, value: null };
+    };
+
+    // Wid: user[:device]@server
+    window.WWebJS.GetSerializedWid = (id) => {
+        const hit = _cachedSerialized(id);
+        if (hit.done) return hit.value;
+
+        let value;
+        if (id.user != null && id.server != null) {
+            value =
+                id.user === 'call'
+                    ? 'call'
+                    : `${id.user}` +
+                      (id.device ? `:${id.device}` : '') +
+                      `@${id.server}`;
+        } else {
+            value = null;
+        }
+
+        if (value != null) id._serialized = value;
+        return value == null ? null : value;
+    };
+
+    // MsgKey: fromMe_remote_id[_self][_participant]
+    window.WWebJS.GetSerializedMsgKey = (id) => {
+        const hit = _cachedSerialized(id);
+        if (hit.done) return hit.value;
+
+        let value;
+        if (id.remote != null && id.id != null) {
+            const remote = window.WWebJS.GetSerializedWid(id.remote);
+            const participant =
+                id.participant != null
+                    ? window.WWebJS.GetSerializedWid(id.participant)
+                    : null;
+            value =
+                `${id.fromMe ? 'true' : 'false'}_${remote}_${id.id}` +
+                (id.self ? `_${id.self}` : '') +
+                (participant ? `_${participant}` : '');
+        } else {
+            value = null;
+        }
+
+        if (value != null) id._serialized = value;
+        return value == null ? null : value;
+    };
+
+    // Generic dispatcher: resolves an existing `_serialized`, then reconstructs
+    // by shape (Wid or MsgKey) from the object's own component keys.
+    window.WWebJS.GetSerialized = (id) => {
+        const hit = _cachedSerialized(id);
+        if (hit.done) return hit.value;
+        if (id.remote != null && id.id != null) {
+            return window.WWebJS.GetSerializedMsgKey(id);
+        }
+        if (id.user != null && id.server != null) {
+            return window.WWebJS.GetSerializedWid(id);
+        }
+        return null;
     };
 };

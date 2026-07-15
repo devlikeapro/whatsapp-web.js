@@ -2,6 +2,7 @@
 
 const { Readable } = require('stream');
 const Base = require('./Base');
+const { GetSerializedWid, GetSerializedMsgKey } = require('../util/Serialized');
 const MessageMedia = require('./MessageMedia');
 const Location = require('./Location');
 const Order = require('./Order');
@@ -35,6 +36,9 @@ class Message extends Base {
          * ID that represents the message
          * @type {object}
          */
+        // Ensure `id._serialized` is populated (WhatsApp Web renamed it to `$1`
+        // in the 2026-07 update); keep `this.id` as the id object.
+        GetSerializedMsgKey(data.id);
         this.id = data.id;
 
         /**
@@ -75,7 +79,7 @@ class Message extends Base {
          */
         this.from =
             typeof data.from === 'object' && data.from !== null
-                ? data.from._serialized
+                ? GetSerializedWid(data.from)
                 : data.from;
 
         /**
@@ -87,7 +91,7 @@ class Message extends Base {
          */
         this.to =
             typeof data.to === 'object' && data.to !== null
-                ? data.to._serialized
+                ? GetSerializedWid(data.to)
                 : data.to;
 
         /**
@@ -96,7 +100,7 @@ class Message extends Base {
          */
         this.author =
             typeof data.author === 'object' && data.author !== null
-                ? data.author._serialized
+                ? GetSerializedWid(data.author)
                 : data.author;
 
         /**
@@ -210,14 +214,12 @@ class Message extends Base {
                       groupId: data.inviteGrp,
                       groupName: data.inviteGrpName,
                       fromId:
-                          typeof data.from === 'object' &&
-                          '_serialized' in data.from
-                              ? data.from._serialized
+                          typeof data.from === 'object' && data.from !== null
+                              ? GetSerializedWid(data.from)
                               : data.from,
                       toId:
-                          typeof data.to === 'object' &&
-                          '_serialized' in data.to
-                              ? data.to._serialized
+                          typeof data.to === 'object' && data.to !== null
+                              ? GetSerializedWid(data.to)
                               : data.to,
                   }
                 : undefined;

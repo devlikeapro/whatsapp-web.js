@@ -1,6 +1,7 @@
 'use strict';
 
 const Base = require('./Base');
+const { GetSerializedWid } = require('../util/Serialized');
 
 /**
  * ID that represents a contact
@@ -26,6 +27,7 @@ class Contact extends Base {
          * ID that represents the contact
          * @type {ContactId}
          */
+        GetSerializedWid(data.id);
         this.id = data.id;
 
         /**
@@ -196,7 +198,7 @@ class Contact extends Base {
 
                 contact = await window
                     .require('WAWebCollections')
-                    .Contact.find(lid._serialized);
+                    .Contact.find(window.WWebJS.GetSerialized(lid));
             }
             await window
                 .require('WAWebBlockContactAction')
