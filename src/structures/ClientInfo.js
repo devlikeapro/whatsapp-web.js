@@ -29,6 +29,13 @@ class ClientInfo extends Base {
         this.wid = data.wid;
 
         /**
+         * Current user LID, when the account has a LID-addressing identity
+         * @type {object|undefined}
+         */
+        GetSerializedWid(data.lid);
+        this.lid = data.lid;
+
+        /**
          * @type {object}
          * @deprecated Use .wid instead
          */

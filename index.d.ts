@@ -685,6 +685,8 @@ declare namespace WAWebJS {
         me: ContactId;
         /** Current user ID */
         wid: ContactId;
+        /** Current user LID, when the account has a LID-addressing identity */
+        lid?: ContactId;
         /**
          * Information about the phone this client is connected to.  Not available in multi-device.
          * @deprecated
