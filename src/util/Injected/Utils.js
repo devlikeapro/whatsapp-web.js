@@ -356,9 +356,12 @@ exports.LoadUtils = () => {
             delete options.linkPreview;
             const link = findLink(content);
             if (link) {
+                // Pass the chat so newsletters get the plaintext preview path
+                // (WAWebNewsletterFetchLinkPreviewAction); without it the E2E
+                // encrypted thumbnail is attached and mobile clients can't render it
                 let preview = await window
                     .require('WAWebLinkPreviewChatAction')
-                    .getLinkPreview(link);
+                    .getLinkPreview(link, chat);
                 if (preview && preview.data) {
                     preview = preview.data;
                     preview.preview = true;
@@ -627,9 +630,14 @@ exports.LoadUtils = () => {
             delete options.linkPreview;
             const link = findLink(content);
             if (link) {
+                // Chat may be missing from the collection - getLinkPreview
+                // treats a null chat as a regular (non-newsletter) one
+                const chat = window
+                    .require('WAWebCollections')
+                    .Chat.get(msg.id.remote);
                 const preview = await window
                     .require('WAWebLinkPreviewChatAction')
-                    .getLinkPreview(link);
+                    .getLinkPreview(link, chat);
                 preview.preview = true;
                 preview.subtype = 'url';
                 options = { ...options, ...preview };
