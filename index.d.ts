@@ -674,6 +674,24 @@ declare namespace WAWebJS {
          * shows a user's current selected option(s) on the poll
          */
         on(event: 'vote_update', listener: (vote: PollVote) => void): this;
+
+        /**
+         * Emitted when the account's reachout timelock (the restriction on messaging
+         * new contacts, the cause of 463 send errors) is set, updated or lifted.
+         * The record is null when there is no restriction.
+         */
+        on(
+            event: 'reachout_timelock_update',
+            listener: (record: ReachoutTimelockRecord | null) => void,
+        ): this;
+    }
+
+    /** Reachout timelock state as stored by the WhatsApp Web app */
+    export interface ReachoutTimelockRecord {
+        state: 'HIDDEN' | 'VISIBLE';
+        /** Unix timestamp in milliseconds when the enforcement ends */
+        time_enforcement_ends: number;
+        enforcement_type: string;
     }
 
     /** Current connection information */
@@ -1057,6 +1075,7 @@ declare namespace WAWebJS {
         REMOTE_SESSION_SAVED = 'remote_session_saved',
         INCOMING_CALL = 'call',
         VOTE_UPDATE = 'vote_update',
+        REACHOUT_TIMELOCK_UPDATE = 'reachout_timelock_update',
     }
 
     /** Group notification types */

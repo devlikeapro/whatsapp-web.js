@@ -1104,6 +1104,22 @@ class Client extends EventEmitter {
             },
         );
 
+        await exposeFunctionIfAbsent(
+            this.pupPage,
+            'onReachoutTimelockEvent',
+            (record) => {
+                /**
+                 * Emitted when the account's reachout timelock (the restriction on messaging
+                 * new contacts, the cause of 463 send errors) is set, updated or lifted
+                 * @event Client#reachout_timelock_update
+                 * @param {?object} record The stored state
+                 * { state: 'HIDDEN'|'VISIBLE', time_enforcement_ends (ms), enforcement_type },
+                 * or null when there is no restriction
+                 */
+                this.emit(Events.REACHOUT_TIMELOCK_UPDATE, record);
+            },
+        );
+
         await this.pupPage.evaluate(() => {
             const { Msg, Chat } = window.require('WAWebCollections');
             const AppState = window.require('WAWebSocketModel').Socket;
@@ -1320,6 +1336,43 @@ class Client extends EventEmitter {
                     return origFunction.apply(module, args);
                 },
             );
+
+            // Reachout timelock (account restriction on messaging new contacts, the cause of 463 send errors).
+            // The app stores it in the user-prefs key 'WAReachoutTimelockState' as
+            // { state: 'HIDDEN'|'VISIBLE', time_enforcement_ends (ms), enforcement_type } and removes the key on lift.
+            // The 'reachout_timelock_state_change' Cmd event is only triggered by lazy UI chunks that may never
+            // load, while the storage write always happens - so also poll the sync, memory-cached read.
+            const readReachoutTimelock = () => {
+                try {
+                    return (
+                        window
+                            .require('WAWebUserPrefsIndexedDBStorage')
+                            .userPrefsIdb.get('WAReachoutTimelockState') ?? null
+                    );
+                } catch (err) {
+                    return null;
+                }
+            };
+            let lastReachoutTimelock = JSON.stringify(readReachoutTimelock());
+            const notifyReachoutTimelock = () => {
+                const record = readReachoutTimelock();
+                const serialized = JSON.stringify(record);
+                if (serialized === lastReachoutTimelock) return;
+                lastReachoutTimelock = serialized;
+                window.onReachoutTimelockEvent(record);
+            };
+            window.onReachoutTimelockEvent(readReachoutTimelock());
+            try {
+                window
+                    .require('WAWebCmd')
+                    .Cmd.on(
+                        'reachout_timelock_state_change',
+                        notifyReachoutTimelock,
+                    );
+            } catch (err) {
+                // No WAWebCmd - polling below still covers the updates
+            }
+            setInterval(notifyReachoutTimelock, 60 * 1000);
         });
     }
 
