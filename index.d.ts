@@ -166,6 +166,12 @@ declare namespace WAWebJS {
         /** Returns the version of WhatsApp Web currently being run */
         getWWebVersion(): Promise<string>;
 
+        /**
+         * Fetches the account's new-chat message capping (per-cycle quota) from the server.
+         * Returns null when the capping modules are unavailable in the current WhatsApp Web build.
+         */
+        fetchMessageCapping(): Promise<MessageCappingRecord | null>;
+
         /** Sets up events and requirements, kicks off authentication request */
         initialize(): Promise<void>;
 
@@ -684,6 +690,16 @@ declare namespace WAWebJS {
             event: 'reachout_timelock_update',
             listener: (record: ReachoutTimelockRecord | null) => void,
         ): this;
+
+        /**
+         * Emitted when the account's new-chat message capping (the per-cycle quota
+         * on messaging new contacts, the cause of 475 send errors) state changes.
+         * The record is null when the state is not known yet.
+         */
+        on(
+            event: 'message_capping_update',
+            listener: (record: MessageCappingRecord | null) => void,
+        ): this;
     }
 
     /** Reachout timelock state as stored by the WhatsApp Web app */
@@ -692,6 +708,21 @@ declare namespace WAWebJS {
         /** Unix timestamp in milliseconds when the enforcement ends */
         time_enforcement_ends: number;
         enforcement_type: string;
+    }
+
+    /** New-chat message capping state as fetched/stored by the WhatsApp Web app */
+    export interface MessageCappingRecord {
+        capping_status?: string;
+        /** -1 when the account has no cap */
+        total_quota?: number;
+        used_quota?: number;
+        /** Unix timestamp in seconds; string when fetched from the server, number when read locally */
+        cycle_start_timestamp?: string | number;
+        /** Unix timestamp in seconds; string when fetched from the server, number when read locally */
+        cycle_end_timestamp?: string | number;
+        server_sent_timestamp?: string | number;
+        mv_status?: string;
+        ote_status?: string;
     }
 
     /** Current connection information */
@@ -1076,6 +1107,7 @@ declare namespace WAWebJS {
         INCOMING_CALL = 'call',
         VOTE_UPDATE = 'vote_update',
         REACHOUT_TIMELOCK_UPDATE = 'reachout_timelock_update',
+        MESSAGE_CAPPING_UPDATE = 'message_capping_update',
     }
 
     /** Group notification types */

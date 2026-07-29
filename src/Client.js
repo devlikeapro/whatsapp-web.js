@@ -1120,6 +1120,23 @@ class Client extends EventEmitter {
             },
         );
 
+        await exposeFunctionIfAbsent(
+            this.pupPage,
+            'onMessageCappingEvent',
+            (record) => {
+                /**
+                 * Emitted when the account's new-chat message capping (the per-cycle quota
+                 * on messaging new contacts, the cause of 475 send errors) state changes
+                 * @event Client#message_capping_update
+                 * @param {?object} record The stored state
+                 * { capping_status, total_quota, used_quota, cycle_start_timestamp (s),
+                 *   cycle_end_timestamp (s), mv_status, ote_status, ... },
+                 * or null when the state is not known yet
+                 */
+                this.emit(Events.MESSAGE_CAPPING_UPDATE, record);
+            },
+        );
+
         await this.pupPage.evaluate(() => {
             const { Msg, Chat } = window.require('WAWebCollections');
             const AppState = window.require('WAWebSocketModel').Socket;
@@ -1373,6 +1390,45 @@ class Client extends EventEmitter {
                 // No WAWebCmd - polling below still covers the updates
             }
             setInterval(notifyReachoutTimelock, 60 * 1000);
+
+            // New-chat message capping (the per-cycle quota on messaging new contacts, the cause of 475
+            // send errors). The app caches it in the user-prefs key 'WANewChatMessageCappingData'.
+            // The 'new_chat_message_capping_state_change' Cmd event is only triggered by lazy UI chunks
+            // that may never load, while the storage write always happens (e.g. a 475 nack marks the
+            // account CAPPED locally) - so also poll the sync, memory-cached read.
+            const readMessageCapping = () => {
+                try {
+                    return (
+                        window
+                            .require(
+                                'WAWebIndividualNewChatMessageCappingLimitUtils',
+                            )
+                            .getCappingData() ?? null
+                    );
+                } catch (err) {
+                    return null;
+                }
+            };
+            let lastMessageCapping = JSON.stringify(readMessageCapping());
+            const notifyMessageCapping = () => {
+                const record = readMessageCapping();
+                const serialized = JSON.stringify(record);
+                if (serialized === lastMessageCapping) return;
+                lastMessageCapping = serialized;
+                window.onMessageCappingEvent(record);
+            };
+            window.onMessageCappingEvent(readMessageCapping());
+            try {
+                window
+                    .require('WAWebCmd')
+                    .Cmd.on(
+                        'new_chat_message_capping_state_change',
+                        notifyMessageCapping,
+                    );
+            } catch (err) {
+                // No WAWebCmd - polling below still covers the updates
+            }
+            setInterval(notifyMessageCapping, 60 * 1000);
         });
     }
 
@@ -1442,6 +1498,38 @@ class Client extends EventEmitter {
         }
 
         await this.authStrategy.logout();
+    }
+
+    /**
+     * Fetches the account's new-chat message capping (per-cycle quota) from the server.
+     * Uses WAWebMexFetchNewChatMessageCappingInfoJob - the same fetch WhatsApp Web runs,
+     * including the WAM telemetry beacons a real client sends around it.
+     * @returns {Promise<?object>} Raw capping data { capping_status, total_quota, used_quota,
+     * cycle_start_timestamp, cycle_end_timestamp, mv_status, ote_status, ... },
+     * or null when the capping modules are unavailable in the current WhatsApp Web build
+     */
+    async fetchMessageCapping() {
+        return await this.pupPage.evaluate(async () => {
+            try {
+                return await window
+                    .require('WAWebMexFetchNewChatMessageCappingInfoJob')
+                    .mexFetchNewChatMessageCapping();
+            } catch (err) {
+                // Module missing (lazy chunk not registered) or MEX failure -
+                // fall back to the locally cached state so callers still get something
+                try {
+                    return (
+                        window
+                            .require(
+                                'WAWebIndividualNewChatMessageCappingLimitUtils',
+                            )
+                            .getCappingData() ?? null
+                    );
+                } catch (err2) {
+                    return null;
+                }
+            }
+        });
     }
 
     /**

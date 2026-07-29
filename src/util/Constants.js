@@ -79,6 +79,7 @@ exports.Events = {
     REMOTE_SESSION_SAVED: 'remote_session_saved',
     VOTE_UPDATE: 'vote_update',
     REACHOUT_TIMELOCK_UPDATE: 'reachout_timelock_update',
+    MESSAGE_CAPPING_UPDATE: 'message_capping_update',
 };
 
 /**
