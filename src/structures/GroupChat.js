@@ -419,12 +419,12 @@ class GroupChat extends Chat {
                 try {
                     await window
                         .require('WAWebGroupModifyInfoJob')
-                        .setGroupDescription(
-                            chatWid,
-                            description,
-                            newId,
-                            descId,
-                        );
+                        .setGroupDescription({
+                            desc: description,
+                            groupWid: chatWid,
+                            newDescId: newId,
+                            prevDescId: descId,
+                        });
                     return true;
                 } catch (err) {
                     if (err.name === 'ServerStatusCodeError') return false;
