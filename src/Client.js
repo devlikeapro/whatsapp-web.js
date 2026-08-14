@@ -434,7 +434,10 @@ class Client extends EventEmitter {
                     [
                         Socket,
                         'change:hasSynced',
-                        () => {
+                        (_Socket, hasSynced) => {
+                            // Logout teardown unsets hasSynced (true -> undefined); only a
+                            // transition to true means the app actually synced.
+                            if (hasSynced !== true) return;
                             window.onAppStateHasSyncedEvent();
                         },
                     ],
@@ -1408,7 +1411,6 @@ class Client extends EventEmitter {
             } catch (err) {
                 // No WAWebCmd - polling below still covers the updates
             }
-            setInterval(notifyReachoutTimelock, 60 * 1000);
 
             // New-chat message capping (the per-cycle quota on messaging new contacts, the cause of 475
             // send errors). The app caches it in the user-prefs key 'WANewChatMessageCappingData'.
@@ -1447,7 +1449,18 @@ class Client extends EventEmitter {
             } catch (err) {
                 // No WAWebCmd - polling below still covers the updates
             }
-            setInterval(notifyMessageCapping, 60 * 1000);
+
+            // Clear poller intervals from a previous attach in this page context -
+            // the _wwjsListeners dedup above does not cover them
+            if (window._wwjsPollIntervals) {
+                for (const intervalId of window._wwjsPollIntervals) {
+                    clearInterval(intervalId);
+                }
+            }
+            window._wwjsPollIntervals = [
+                setInterval(notifyReachoutTimelock, 60 * 1000),
+                setInterval(notifyMessageCapping, 60 * 1000),
+            ];
         });
     }
 

@@ -1,21 +1,31 @@
 /**
- * Expose a function to the page if it does not exist
+ * Expose a function to the page, replacing an existing binding with the same name.
  *
- * NOTE:
- * Rewrite it to 'upsertFunction' after updating Puppeteer to 20.6 or higher
- * using page.removeExposedFunction
- * https://pptr.dev/api/puppeteer.page.removeexposedfunction
+ * Serialized per page: puppeteer's exposeFunction throws if the binding already exists,
+ * so concurrent calls (e.g. AUTHENTICATED and READY listeners racing) must queue, not interleave.
  *
  * @param {object} page - Puppeteer Page instance
  * @param {string} name
  * @param {Function} fn
  */
+const pageLocks = new WeakMap();
+
 async function exposeFunctionIfAbsent(page, name, fn) {
-    const exist = await page.evaluate((name) => {
-        return !!window[name];
-    }, name);
-    if (exist) {
+    const previous = pageLocks.get(page) || Promise.resolve();
+    const current = previous.then(() => upsertFunction(page, name, fn));
+    // Keep the chain usable even when this upsert fails
+    pageLocks.set(
+        page,
+        current.catch(() => {}),
+    );
+    return await current;
+}
+
+async function upsertFunction(page, name, fn) {
+    try {
         await page.removeExposedFunction(name);
+    } catch (ignoredError) {
+        // Not exposed yet - nothing to remove
     }
     await page.exposeFunction(name, log(fn));
 }
