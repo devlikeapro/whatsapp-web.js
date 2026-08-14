@@ -1501,6 +1501,36 @@ class Client extends EventEmitter {
     }
 
     /**
+     * Fetches the account's reachout timelock state from the server.
+     * Uses WAWebGetReachoutTimelockJob - the same fetch WhatsApp Web runs on startup - which
+     * also updates the locally stored 'WAReachoutTimelockState' record (removed when inactive).
+     * @returns {Promise<?object>} The stored record { state, time_enforcement_ends (ms),
+     * enforcement_type }, null when no enforcement is active, or undefined when the
+     * timelock modules are unavailable in the current WhatsApp Web build
+     */
+    async fetchReachoutTimelock() {
+        return await this.pupPage.evaluate(async () => {
+            try {
+                await window
+                    .require('WAWebGetReachoutTimelockJob')
+                    .fetchReachoutTimelock();
+            } catch (err) {
+                // Module missing (lazy chunk not registered) or MEX failure -
+                // fall back to the locally cached state so callers still get something
+            }
+            try {
+                return (
+                    window
+                        .require('WAWebUserPrefsIndexedDBStorage')
+                        .userPrefsIdb.get('WAReachoutTimelockState') ?? null
+                );
+            } catch (err) {
+                return undefined;
+            }
+        });
+    }
+
+    /**
      * Fetches the account's new-chat message capping (per-cycle quota) from the server.
      * Uses WAWebMexFetchNewChatMessageCappingInfoJob - the same fetch WhatsApp Web runs,
      * including the WAM telemetry beacons a real client sends around it.

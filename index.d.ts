@@ -167,6 +167,13 @@ declare namespace WAWebJS {
         getWWebVersion(): Promise<string>;
 
         /**
+         * Fetches the account's reachout timelock state from the server.
+         * Returns null when no enforcement is active, or undefined when the timelock
+         * modules are unavailable in the current WhatsApp Web build.
+         */
+        fetchReachoutTimelock(): Promise<ReachoutTimelockRecord | null | undefined>;
+
+        /**
          * Fetches the account's new-chat message capping (per-cycle quota) from the server.
          * Returns null when the capping modules are unavailable in the current WhatsApp Web build.
          */
