@@ -104,6 +104,7 @@ class Client extends EventEmitter {
 
         this.currentIndexHtml = null;
         this.lastLoggedOut = false;
+        this._appSyncedHandling = false;
 
         Util.setFfmpegPath(this.options.ffmpegPath);
     }
@@ -306,83 +307,95 @@ class Client extends EventEmitter {
                 this.pupPage,
                 'onAppStateHasSyncedEvent',
                 async () => {
-                    const authEventPayload =
-                        await this.authStrategy.getAuthEventPayload();
-                    /**
-                     * Emitted when authentication is successful
-                     * @event Client#authenticated
-                     */
-                    this.emit(Events.AUTHENTICATED, authEventPayload);
-
-                    const injected = await this.pupPage.evaluate(async () => {
-                        return typeof window.WWebJS !== 'undefined';
-                    });
-
-                    if (!injected) {
-                        if (
-                            this.options.webVersionCache.type === 'local' &&
-                            this.currentIndexHtml
-                        ) {
-                            const { type: webCacheType, ...webCacheOptions } =
-                                this.options.webVersionCache;
-                            const webCache = WebCacheFactory.createWebCache(
-                                webCacheType,
-                                webCacheOptions,
-                            );
-
-                            await webCache.persist(
-                                this.currentIndexHtml,
-                                version,
-                            );
-                        }
-
-                        // Load util functions (serializers, helper functions)
-                        await this.pupPage.evaluate(LoadUtils);
-
-                        await this.pupPage
-                            .waitForFunction(
-                                'typeof window.WWebJS !== "undefined"',
-                                { timeout: 30000 },
-                            )
-                            .catch(() => {
-                                throw 'ready timeout';
-                            });
-
+                    // Single-flight: the change:hasSynced listener and a re-inject's hasSynced check can fire
+                    // concurrently; a second concurrent run would double-register Store listeners in attachEventListeners
+                    if (this._appSyncedHandling) return;
+                    this._appSyncedHandling = true;
+                    try {
+                        const authEventPayload =
+                            await this.authStrategy.getAuthEventPayload();
                         /**
-                         * Current connection information
-                         * @type {ClientInfo}
+                         * Emitted when authentication is successful
+                         * @event Client#authenticated
                          */
-                        this.info = new ClientInfo(
-                            this,
-                            await this.pupPage.evaluate(() => {
-                                return {
-                                    ...window
-                                        .require('WAWebConnModel')
-                                        .Conn.serialize(),
-                                    wid:
-                                        window
-                                            .require('WAWebUserPrefsMeUser')
-                                            .getMaybeMePnUser() ||
-                                        window
-                                            .require('WAWebUserPrefsMeUser')
-                                            .getMaybeMeLidUser(),
-                                    lid: window
-                                        .require('WAWebUserPrefsMeUser')
-                                        .getMaybeMeLidUser(),
-                                };
-                            }),
+                        this.emit(Events.AUTHENTICATED, authEventPayload);
+
+                        const injected = await this.pupPage.evaluate(
+                            async () => {
+                                return typeof window.WWebJS !== 'undefined';
+                            },
                         );
 
-                        this.interface = new InterfaceController(this);
+                        if (!injected) {
+                            if (
+                                this.options.webVersionCache.type === 'local' &&
+                                this.currentIndexHtml
+                            ) {
+                                const {
+                                    type: webCacheType,
+                                    ...webCacheOptions
+                                } = this.options.webVersionCache;
+                                const webCache = WebCacheFactory.createWebCache(
+                                    webCacheType,
+                                    webCacheOptions,
+                                );
 
-                        await this.attachEventListeners();
+                                await webCache.persist(
+                                    this.currentIndexHtml,
+                                    version,
+                                );
+                            }
+
+                            // Load util functions (serializers, helper functions)
+                            await this.pupPage.evaluate(LoadUtils);
+
+                            await this.pupPage
+                                .waitForFunction(
+                                    'typeof window.WWebJS !== "undefined"',
+                                    { timeout: 30000 },
+                                )
+                                .catch(() => {
+                                    throw 'ready timeout';
+                                });
+
+                            /**
+                             * Current connection information
+                             * @type {ClientInfo}
+                             */
+                            this.info = new ClientInfo(
+                                this,
+                                await this.pupPage.evaluate(() => {
+                                    return {
+                                        ...window
+                                            .require('WAWebConnModel')
+                                            .Conn.serialize(),
+                                        wid:
+                                            window
+                                                .require('WAWebUserPrefsMeUser')
+                                                .getMaybeMePnUser() ||
+                                            window
+                                                .require('WAWebUserPrefsMeUser')
+                                                .getMaybeMeLidUser(),
+                                        lid: window
+                                            .require('WAWebUserPrefsMeUser')
+                                            .getMaybeMeLidUser(),
+                                    };
+                                }),
+                            );
+
+                            this.interface = new InterfaceController(this);
+
+                            await this.attachEventListeners();
+                        }
+                        /**
+                         * Emitted when the client has initialized and is ready to receive messages.
+                         * @event Client#ready
+                         */
+                        this.emit(Events.READY);
+                        this.authStrategy.afterAuthReady();
+                    } finally {
+                        this._appSyncedHandling = false;
                     }
-                    /**
-                     * Emitted when the client has initialized and is ready to receive messages.
-                     * @event Client#ready
-                     */
-                    this.emit(Events.READY);
-                    this.authStrategy.afterAuthReady();
                 },
             );
             let lastPercent = null;
@@ -465,10 +478,10 @@ class Client extends EventEmitter {
                 window._wwjsListeners = listeners;
 
                 // Atomic hasSynced check in the same synchronous block as listener registration.
-                // If hasSynced is already true, Backbone won't fire change:hasSynced (no transition).
-                // If hasSynced is false, the listener above will catch the future transition.
-                const storeInjected = typeof window.WWebJS !== 'undefined';
-                if (Socket.hasSynced === true && !storeInjected) {
+                // If hasSynced is already true, Backbone won't fire change:hasSynced (no transition) - call the
+                // handler directly, even if WWebJS is already injected: a previous run may have died mid-way
+                // (navigation, timeout) without ever emitting AUTHENTICATED/READY.
+                if (Socket.hasSynced === true) {
                     window.onAppStateHasSyncedEvent();
                 }
             });
@@ -574,13 +587,19 @@ class Client extends EventEmitter {
                 this.lastLoggedOut = false;
             }
 
-            const storeAvailable = await this.pupPage.evaluate(() => {
-                return typeof window.WWebJS !== 'undefined';
-            });
+            // evaluate can race the navigation and hit a destroyed context - treat errors as "not available"
+            const storeAvailable = await this.pupPage
+                .evaluate(() => {
+                    return typeof window.WWebJS !== 'undefined';
+                })
+                .catch(() => false);
 
             if (!isLogout && storeAvailable) return;
 
-            await this.inject();
+            // The handler is an async event listener - an unhandled rejection here would silently kill recovery
+            await this.inject().catch((err) => {
+                console.error('Failed to re-inject after navigation', err);
+            });
         });
     }
 
