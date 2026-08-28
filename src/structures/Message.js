@@ -618,13 +618,15 @@ class Message extends Base {
                             .require('WAWebCollections')
                             .Msg.getMessagesById([msgId])
                     )?.messages?.[0];
-                const chat =
-                    window
-                        .require('WAWebCollections')
-                        .Chat.get(msg.id.remote) ||
-                    (await window
-                        .require('WAWebCollections')
-                        .Chat.find(msg.id.remote));
+                // Newsletter chats live in WAWebNewsletterCollection, not Chat -
+                // Chat.find crashes with "this.findImpl is not a function"
+                const chatId =
+                    typeof msg.id.remote === 'object'
+                        ? window.WWebJS.GetSerialized(msg.id.remote)
+                        : msg.id.remote;
+                const chat = await window.WWebJS.getChat(chatId, {
+                    getAsModel: false,
+                });
 
                 const canRevoke =
                     window
@@ -684,9 +686,13 @@ class Message extends Base {
                         .Msg.getMessagesById([msgId])
                 )?.messages?.[0];
             if (window.require('WAWebMsgActionCapability').canStarMsg(msg)) {
-                let chat = await window
-                    .require('WAWebCollections')
-                    .Chat.find(msg.id.remote);
+                const chatId =
+                    typeof msg.id.remote === 'object'
+                        ? window.WWebJS.GetSerialized(msg.id.remote)
+                        : msg.id.remote;
+                const chat = await window.WWebJS.getChat(chatId, {
+                    getAsModel: false,
+                });
                 return window
                     .require('WAWebCmd')
                     .Cmd.sendStarMsgs(chat, [msg], false);
@@ -707,9 +713,13 @@ class Message extends Base {
                         .Msg.getMessagesById([msgId])
                 )?.messages?.[0];
             if (window.require('WAWebMsgActionCapability').canStarMsg(msg)) {
-                let chat = await window
-                    .require('WAWebCollections')
-                    .Chat.find(msg.id.remote);
+                const chatId =
+                    typeof msg.id.remote === 'object'
+                        ? window.WWebJS.GetSerialized(msg.id.remote)
+                        : msg.id.remote;
+                const chat = await window.WWebJS.getChat(chatId, {
+                    getAsModel: false,
+                });
                 return window
                     .require('WAWebCmd')
                     .Cmd.sendUnstarMsgs(chat, [msg], false);
