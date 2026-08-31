@@ -175,18 +175,29 @@ exports.LoadUtils = () => {
 
         let quotedMsgOptions = {};
         if (options.quotedMessageId) {
+            // channel msg keys have unreliable fromMe, try both variants like WAWebNewsletterQuotedMsgUtils does
+            const quotedMsgIds = [options.quotedMessageId];
+            if (isChannel) {
+                quotedMsgIds.push(
+                    options.quotedMessageId.startsWith('true_')
+                        ? options.quotedMessageId.replace('true_', 'false_')
+                        : options.quotedMessageId.replace('false_', 'true_'),
+                );
+            }
             let attempts = 5;
             let attempt = 1;
             let quotedMessage;
             for (attempt; attempt <= attempts; attempt++) {
-                quotedMessage = window
-                    .require('WAWebCollections')
-                    .Msg.get(options.quotedMessageId);
+                quotedMessage = quotedMsgIds
+                    .map((msgId) =>
+                        window.require('WAWebCollections').Msg.get(msgId),
+                    )
+                    .find(Boolean);
                 !quotedMessage &&
                     (quotedMessage = (
                         await window
                             .require('WAWebCollections')
-                            .Msg.getMessagesById([options.quotedMessageId])
+                            .Msg.getMessagesById(quotedMsgIds)
                     )?.messages?.[0]);
                 if (quotedMessage) {
                     break;
@@ -209,7 +220,9 @@ exports.LoadUtils = () => {
             if (quotedMessage && isChannel) {
                 canReply = quotedMessage.id.remote.equals(chat.id);
                 if (!canReply) {
-                    console.error('Can only quote a message from the same channel.');
+                    console.error(
+                        'Can only quote a message from the same channel.',
+                    );
                 }
             }
 
