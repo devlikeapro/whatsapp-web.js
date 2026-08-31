@@ -1275,6 +1275,10 @@ class Client extends EventEmitter {
                     return;
                 }
 
+                // Ciphertext models can be removed and re-added on new-chat prefetch; handle each model once
+                if (msg._wwebjsCiphertextHandled) return;
+                msg._wwebjsCiphertextHandled = true;
+
                 window.onAddMessageCiphertextEvent(
                     window.WWebJS.getMessageModel(msg),
                 );
