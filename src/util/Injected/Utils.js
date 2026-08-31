@@ -201,21 +201,26 @@ exports.LoadUtils = () => {
             }
 
             const ReplyUtils = window.require('WAWebMsgReply');
-            const canReply =
+            let canReply =
                 quotedMessage &&
                 ReplyUtils?.canReplyMsg(quotedMessage.unsafe());
 
-            if (canReply) {
-                quotedMsgOptions = quotedMessage.msgContextInfo(chat);
-            } else {
-                if (!options.ignoreQuoteErrors) {
-                    throw new Error('Could not get the quoted message.');
+            // canReplyMsg is UI gating; channels only allow quoting their own messages
+            if (quotedMessage && isChannel) {
+                canReply = quotedMessage.id.remote.equals(chat.id);
+                if (!canReply) {
+                    console.error('Can only quote a message from the same channel.');
                 }
             }
 
-            delete options.ignoreQuoteErrors;
-            delete options.quotedMessageId;
+            if (canReply) {
+                quotedMsgOptions = quotedMessage.msgContextInfo(chat.id);
+            } else if (!options.ignoreQuoteErrors) {
+                throw new Error('Could not get the quoted message.');
+            }
         }
+        delete options.ignoreQuoteErrors;
+        delete options.quotedMessageId;
 
         if (options.mentionedJidList) {
             options.mentionedJidList = options.mentionedJidList.map((id) =>

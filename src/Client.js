@@ -1686,7 +1686,6 @@ class Client extends EventEmitter {
             isChannel &&
             [
                 options.sendMediaAsDocument,
-                options.quotedMessageId,
                 options.parseVCards,
                 options.isViewOnce,
                 content instanceof Location,
