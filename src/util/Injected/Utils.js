@@ -3,6 +3,21 @@
 exports.LoadUtils = () => {
     window.WWebJS = {};
 
+    function getMessageSender(chat, lidUser, meUser) {
+        const phoneUser = meUser || lidUser;
+
+        if (typeof chat.id?.isGroup === 'function' && chat.id.isGroup()) {
+            const isLidAddressingMode =
+                chat.groupMetadata && chat.groupMetadata.isLidAddressingMode;
+            return isLidAddressingMode ? lidUser : phoneUser;
+        }
+
+        // Direct LID chats must use the phone identity for cold outbound sends.
+        return phoneUser;
+    }
+
+    window.WWebJS.getMessageSender = getMessageSender;
+
     /**
      * Helper function that compares between two WWeb versions. Its purpose is to help the developer to choose the correct code implementation depending on the comparison value and the WWeb version.
      * @param {string} lOperand The left operand for the WWeb version string to compare with
@@ -461,14 +476,10 @@ exports.LoadUtils = () => {
         if (typeof window.onNewMessageId === 'function') {
             window.onNewMessageId(newId);
         }
-        let from = chat.id.isLid() ? lidUser : meUser;
+        const from = getMessageSender(chat, lidUser, meUser);
         let participant;
 
         if (typeof chat.id?.isGroup === 'function' && chat.id.isGroup()) {
-            from =
-                chat.groupMetadata && chat.groupMetadata.isLidAddressingMode
-                    ? lidUser
-                    : meUser;
             participant = window
                 .require('WAWebWidFactory')
                 .asUserWidOrThrow(from);
