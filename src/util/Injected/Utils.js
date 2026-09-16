@@ -92,6 +92,42 @@ exports.LoadUtils = () => {
         }
     };
 
+    /**
+     * Requires a module that may live in a lazily loaded chunk.
+     * Falls back to bootloading the given components until the module is defined.
+     * @param {string} moduleName
+     * @param {Object<string, string>} components Bootloader component name => ref label (the *Loadable that WhatsApp Web loads it with)
+     * @param {number} timeoutMs Per-component wait, unknown component names never call back
+     * @returns {Promise<object>}
+     */
+    window.WWebJS.requireLazy = async (
+        moduleName,
+        components,
+        timeoutMs = 15000,
+    ) => {
+        let module = window.require(moduleName);
+        if (module) return module;
+        const Bootloader = window.require('Bootloader');
+        for (const [component, ref] of Object.entries(components)) {
+            await new Promise((resolve) => {
+                const timer = setTimeout(resolve, timeoutMs);
+                Bootloader.loadModules(
+                    [component],
+                    () => {
+                        clearTimeout(timer);
+                        resolve();
+                    },
+                    ref,
+                );
+            });
+            module = window.require(moduleName);
+            if (module) return module;
+        }
+        throw new Error(
+            `Module '${moduleName}' is not available (tried components: ${Object.keys(components).join(', ')})`,
+        );
+    };
+
     window.WWebJS.injectToFunction(
         { module: 'WAWebBackendJobsCommon', function: 'mediaTypeFromProtobuf' },
         (module, func, ...args) => {

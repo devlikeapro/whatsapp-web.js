@@ -2127,14 +2127,36 @@ class Client extends EventEmitter {
 
     /**
      * Accepts an invitation to join a group
+     * If the group requires admin approval, a join request is created and the group id is returned as well
      * @param {string} inviteCode Invitation code
      * @returns {Promise<string>} Id of the joined Chat
      */
     async acceptInvite(inviteCode) {
         const res = await this.pupPage.evaluate(async (inviteCode) => {
-            return await window
-                .require('WAWebGroupInviteJob')
-                .joinGroupViaInvite(inviteCode);
+            // WAWebGroupInviteJob moved to a lazy chunk, bootload a component that bundles it
+            const GroupInviteJob = await window.WWebJS.requireLazy(
+                'WAWebGroupInviteJob',
+                {
+                    'WAWebGroupInviteLinkModal.react':
+                        'WAWebGroupInviteLinkModalLoadable.react',
+                    'WAWebGroupInviteLinkDrawer.react':
+                        'WAWebGroupInviteLinkDrawerLoadable',
+                    'WAWebGroupsV4InviteModal.react':
+                        'WAWebGroupsV4InviteModalLoadable',
+                },
+            );
+            try {
+                return await GroupInviteJob.joinGroupViaInvite(inviteCode);
+            } catch (err) {
+                // admin approval enabled - the request was created, the parser just expected <group>
+                if (
+                    err?.name === 'UnexpectedJoinGroupViaInviteResponse' &&
+                    err.gid
+                ) {
+                    return { gid: err.gid };
+                }
+                throw err;
+            }
         }, inviteCode);
 
         return GetSerializedWid(res.gid);
