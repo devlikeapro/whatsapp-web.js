@@ -544,7 +544,7 @@ exports.LoadUtils = () => {
             isNewMsg: true,
             type: 'chat',
             ...ephemeralFields,
-            ...mediaOptions,
+            ...window.WWebJS.mediaDataFields(mediaOptions),
             ...(mediaOptions.toJSON ? mediaOptions.toJSON() : {}),
             ...quotedMsgOptions,
             ...locationOptions,
@@ -881,6 +881,22 @@ exports.LoadUtils = () => {
         });
 
         return mediaData;
+    };
+
+    // MediaData is a model: its __x_* slots (e.g. __x_id) would overwrite the Msg's own when spread into it
+    window.WWebJS.mediaDataFields = (mediaData) => {
+        const internals = [
+            'revisionNumber',
+            'parent',
+            'collection',
+            '_uiObservers',
+            'mirror',
+        ];
+        return Object.fromEntries(
+            Object.entries(mediaData).filter(
+                ([key]) => !key.startsWith('__') && !internals.includes(key),
+            ),
+        );
     };
 
     window.WWebJS.getMessageModel = (message) => {
