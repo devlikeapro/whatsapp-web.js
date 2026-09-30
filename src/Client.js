@@ -2280,9 +2280,14 @@ class Client extends EventEmitter {
         const couldSet = await this.pupPage.evaluate(async (displayName) => {
             if (!window.require('WAWebConnModel').Conn.canSetMyPushname())
                 return false;
-            await window
-                .require('WAWebSetPushnameConnAction')
-                .setPushname(displayName);
+            const WAWebSetPushnameConnAction = await window.WWebJS.requireLazy(
+                'WAWebSetPushnameConnAction',
+                {
+                    'WAWebProfileDrawer.react':
+                        'WAWebProfileDrawerLoadableRequireBundle',
+                },
+            );
+            await WAWebSetPushnameConnAction.setPushname(displayName);
             return true;
         }, displayName);
 
@@ -2673,10 +2678,13 @@ class Client extends EventEmitter {
                         .require('WAWebWidFactory')
                         .createWid(parentGroupId));
 
+                // WAWebGroupCreateJob lives in the new group flow chunk
+                const WAWebGroupCreateJob = await window.WWebJS.requireLazy(
+                    'WAWebGroupCreateJob',
+                    { 'WAWebNewGroupFlow.react': 'WAWebNewGroupFlowLoadable' },
+                );
                 try {
-                    createGroupResult = await window
-                        .require('WAWebGroupCreateJob')
-                        .createGroup(
+                    createGroupResult = await WAWebGroupCreateJob.createGroup(
                             {
                                 addressingModeOverride: 'lid',
                                 memberAddMode: options.memberAddMode ?? false,
@@ -3539,9 +3547,18 @@ class Client extends EventEmitter {
 
         return await this.pupPage.evaluate(
             async (startTimeTs, callType) => {
-                const response = await window
-                    .require('WAWebGenerateEventCallLink')
-                    .createEventCallLink(startTimeTs, callType);
+                // WAWebGenerateEventCallLink lives in the create event flow chunk
+                const WAWebGenerateEventCallLink = await window.WWebJS.requireLazy(
+                    'WAWebGenerateEventCallLink',
+                    {
+                        'WAWebEventsCreateEventModalFlow.react':
+                            'WAWebEventsCreateEventModalFlowLoadable',
+                    },
+                );
+                const response = await WAWebGenerateEventCallLink.createEventCallLink(
+                    startTimeTs,
+                    callType,
+                );
                 return response ?? '';
             },
             startTime,

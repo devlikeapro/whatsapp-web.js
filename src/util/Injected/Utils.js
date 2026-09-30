@@ -327,6 +327,20 @@ exports.LoadUtils = () => {
         if (options.event) {
             const { name, startTimeTs, eventSendOptions } = options.event;
             const { messageSecret } = eventSendOptions;
+            let eventJoinLink = null;
+            if (eventSendOptions.callType !== 'none') {
+                const WAWebGenerateEventCallLink = await window.WWebJS.requireLazy(
+                    'WAWebGenerateEventCallLink',
+                    {
+                        'WAWebEventsCreateEventModalFlow.react':
+                            'WAWebEventsCreateEventModalFlowLoadable',
+                    },
+                );
+                eventJoinLink = await WAWebGenerateEventCallLink.createEventCallLink(
+                    startTimeTs,
+                    eventSendOptions.callType,
+                );
+            }
             eventOptions = {
                 type: 'event_creation',
                 eventName: name,
@@ -338,15 +352,7 @@ exports.LoadUtils = () => {
                     degreesLongitude: 0,
                     name: eventSendOptions.location,
                 },
-                eventJoinLink:
-                    eventSendOptions.callType === 'none'
-                        ? null
-                        : await window
-                              .require('WAWebGenerateEventCallLink')
-                              .createEventCallLink(
-                                  startTimeTs,
-                                  eventSendOptions.callType,
-                              ),
+                eventJoinLink: eventJoinLink,
                 isEventCanceled: eventSendOptions.isEventCanceled,
                 messageSecret:
                     Array.isArray(messageSecret) && messageSecret.length === 32

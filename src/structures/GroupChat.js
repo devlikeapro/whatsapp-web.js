@@ -577,10 +577,15 @@ class GroupChat extends Chat {
      */
     async getInviteCode() {
         const codeRes = await this.client.pupPage.evaluate(async (chatId) => {
+            const WAWebMexFetchGroupInviteCodeJob = await window.WWebJS.requireLazy(
+                'WAWebMexFetchGroupInviteCodeJob',
+                {
+                    'WAWebGroupInviteLinkDrawer.react':
+                        'WAWebGroupInviteLinkDrawerLoadable',
+                },
+            );
             try {
-                return await window
-                    .require('WAWebMexFetchGroupInviteCodeJob')
-                    .fetchMexGroupInviteCode(chatId);
+                return await WAWebMexFetchGroupInviteCodeJob.fetchMexGroupInviteCode(chatId);
             } catch (err) {
                 if (err.name === 'ServerStatusCodeError') return undefined;
                 throw err;
@@ -595,11 +600,16 @@ class GroupChat extends Chat {
      * @returns {Promise<string>} New invite code
      */
     async revokeInvite() {
-        const codeRes = await this.client.pupPage.evaluate((chatId) => {
+        const codeRes = await this.client.pupPage.evaluate(async (chatId) => {
             const chatWid = window.require('WAWebWidFactory').createWid(chatId);
-            return window
-                .require('WAWebGroupInviteJob')
-                .resetGroupInviteCode(chatWid);
+            const WAWebGroupInviteJob = await window.WWebJS.requireLazy(
+                'WAWebGroupInviteJob',
+                {
+                    'WAWebGroupInviteLinkDrawer.react':
+                        'WAWebGroupInviteLinkDrawerLoadable',
+                },
+            );
+            return await WAWebGroupInviteJob.resetGroupInviteCode(chatWid);
         }, this.id._serialized);
 
         return codeRes.code;
