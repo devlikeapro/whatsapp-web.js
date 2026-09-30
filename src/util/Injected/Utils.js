@@ -147,6 +147,10 @@ exports.LoadUtils = () => {
     );
 
     window.WWebJS.forwardMessage = async (chatId, msgId) => {
+        const ForwardMessage = await window.WWebJS.requireLazy(
+            'WAWebChatForwardMessage',
+            { 'WAWebForwardMessageFlow.react': 'WAWebForwardMessageFlowLoadable' },
+        );
         const msg =
             window.require('WAWebCollections').Msg.get(msgId) ||
             (
@@ -155,7 +159,7 @@ exports.LoadUtils = () => {
                     .Msg.getMessagesById([msgId])
             )?.messages?.[0];
         const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
-        return await window.require('WAWebChatForwardMessage').forwardMessages({
+        return await ForwardMessage.forwardMessages({
             chat: chat,
             msgs: [msg],
             multicast: true,
