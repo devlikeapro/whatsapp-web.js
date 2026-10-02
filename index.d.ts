@@ -2309,6 +2309,12 @@ declare namespace WAWebJS {
          * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
          */
         setAddMembersAdminsOnly: (adminsOnly?: boolean) => Promise<boolean>;
+        /**
+         * Updates the group setting to allow only admins to share message history with new members.
+         * @param {boolean} [adminsOnly=true] Enable or disable this option
+         * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
+         */
+        setShareHistoryAdminsOnly: (adminsOnly?: boolean) => Promise<boolean>;
         /** Updates the group settings to only allow admins to send messages
          * @param {boolean} [adminsOnly=true] Enable or disable this option
          * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.

@@ -477,6 +477,42 @@ class GroupChat extends Chat {
     }
 
     /**
+     * Updates the group setting to allow only admins to share message history with new members.
+     * @param {boolean} [adminsOnly=true] Enable or disable this option
+     * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
+     */
+    async setShareHistoryAdminsOnly(adminsOnly = true) {
+        const success = await this.client.pupPage.evaluate(
+            async (groupId, adminsOnly) => {
+                const chat = await window.WWebJS.getChat(groupId, {
+                    getAsModel: false,
+                });
+                try {
+                    await window
+                        .require('WAWebSetPropertyGroupAction')
+                        .setGroupProperty(
+                            chat,
+                            'member_share_group_history_mode',
+                            adminsOnly ? 0 : 1,
+                        );
+                    return true;
+                } catch (err) {
+                    if (err.name === 'ServerStatusCodeError') return false;
+                    throw err;
+                }
+            },
+            this.id._serialized,
+            adminsOnly,
+        );
+        if (success) {
+            this.groupMetadata.memberShareGroupHistoryMode = adminsOnly
+                ? 'admin_share'
+                : 'all_member_share';
+        }
+        return success;
+    }
+
+    /**
      * Updates the group settings to only allow admins to send messages.
      * @param {boolean} [adminsOnly=true] Enable or disable this option
      * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
