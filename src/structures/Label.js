@@ -42,6 +42,18 @@ class Label extends Base {
          * @type {number}
          */
         this.colorIndex = labelData.colorIndex;
+
+        /**
+         * WhatsApp list type: CUSTOM/PREDEFINED/LEAD are user labels, UNREAD/GROUPS/FAVORITES... are built-in lists
+         * @type {number|undefined}
+         */
+        this.type = labelData.type;
+
+        /**
+         * false for lists the user turned off
+         * @type {boolean|undefined}
+         */
+        this.isActive = labelData.isActive;
     }
 
     /**

@@ -1400,6 +1400,8 @@ exports.LoadUtils = () => {
     window.WWebJS.getLabelModel = (label) => {
         let res = label.serialize();
         res.hexColor = label.hexColor;
+        res.type = label.type;
+        res.isActive = label.isActive;
 
         return res;
     };

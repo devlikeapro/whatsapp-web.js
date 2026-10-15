@@ -1599,6 +1599,10 @@ declare namespace WAWebJS {
         hexColor: string;
         /** Color index for the label */
         colorIndex: number;
+        /** WhatsApp list type: CUSTOM/PREDEFINED/LEAD are user labels, UNREAD/GROUPS/FAVORITES... are built-in lists */
+        type?: number;
+        /** false for lists the user turned off */
+        isActive?: boolean;
 
         /** Get all chats that have been assigned this Label */
         getChats: () => Promise<Chat[]>;
