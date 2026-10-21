@@ -513,6 +513,30 @@ class GroupChat extends Chat {
     }
 
     /**
+     * Gets the member tags - the custom tag each participant set for themselves in the group.
+     * @returns {Promise<Array<{id: string, lid: string, tag: string, timestamp: number}>>}
+     */
+    async getMemberTags() {
+        return await this.client.pupPage.evaluate(
+            (groupId) => window.WWebJS.getGroupMemberTags(groupId),
+            this.id._serialized,
+        );
+    }
+
+    /**
+     * Sets my member tag in the group, an empty tag removes it (members can only tag themselves)
+     * @param {string} [tag='']
+     * @returns {Promise<boolean>} Returns true if the change was sent
+     */
+    async setMyMemberTag(tag = '') {
+        return await this.client.pupPage.evaluate(
+            (groupId, tag) => window.WWebJS.setMyGroupMemberTag(groupId, tag),
+            this.id._serialized,
+            tag,
+        );
+    }
+
+    /**
      * Updates the group settings to only allow admins to send messages.
      * @param {boolean} [adminsOnly=true] Enable or disable this option
      * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
@@ -613,15 +637,18 @@ class GroupChat extends Chat {
      */
     async getInviteCode() {
         const codeRes = await this.client.pupPage.evaluate(async (chatId) => {
-            const WAWebMexFetchGroupInviteCodeJob = await window.WWebJS.requireLazy(
-                'WAWebMexFetchGroupInviteCodeJob',
-                {
-                    'WAWebGroupInviteLinkDrawer.react':
-                        'WAWebGroupInviteLinkDrawerLoadable',
-                },
-            );
+            const WAWebMexFetchGroupInviteCodeJob =
+                await window.WWebJS.requireLazy(
+                    'WAWebMexFetchGroupInviteCodeJob',
+                    {
+                        'WAWebGroupInviteLinkDrawer.react':
+                            'WAWebGroupInviteLinkDrawerLoadable',
+                    },
+                );
             try {
-                return await WAWebMexFetchGroupInviteCodeJob.fetchMexGroupInviteCode(chatId);
+                return await WAWebMexFetchGroupInviteCodeJob.fetchMexGroupInviteCode(
+                    chatId,
+                );
             } catch (err) {
                 if (err.name === 'ServerStatusCodeError') return undefined;
                 throw err;

@@ -171,7 +171,9 @@ declare namespace WAWebJS {
          * Returns null when no enforcement is active, or undefined when the timelock
          * modules are unavailable in the current WhatsApp Web build.
          */
-        fetchReachoutTimelock(): Promise<ReachoutTimelockRecord | null | undefined>;
+        fetchReachoutTimelock(): Promise<
+            ReachoutTimelockRecord | null | undefined
+        >;
 
         /**
          * Fetches the account's new-chat message capping (per-cycle quota) from the server.
@@ -225,10 +227,7 @@ declare namespace WAWebJS {
         ): Promise<Message>;
 
         /** Send a reaction to a specific messageId */
-        sendReaction(
-            messageId: string,
-            reaction: string,
-        ): Promise<void>;
+        sendReaction(messageId: string, reaction: string): Promise<void>;
 
         /** Sends a channel admin invitation to a user, allowing them to become an admin of the channel */
         sendChannelAdminInvite(
@@ -2319,6 +2318,12 @@ declare namespace WAWebJS {
          * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.
          */
         setShareHistoryAdminsOnly: (adminsOnly?: boolean) => Promise<boolean>;
+        /** Gets the member tags - the custom tag each participant set for themselves in the group */
+        getMemberTags: () => Promise<
+            Array<{ id: string; lid: string; tag: string; timestamp: number }>
+        >;
+        /** Sets my member tag in the group, an empty tag removes it (members can only tag themselves) */
+        setMyMemberTag: (tag?: string) => Promise<boolean>;
         /** Updates the group settings to only allow admins to send messages
          * @param {boolean} [adminsOnly=true] Enable or disable this option
          * @returns {Promise<boolean>} Returns true if the setting was properly updated. This can return false if the user does not have the necessary permissions.

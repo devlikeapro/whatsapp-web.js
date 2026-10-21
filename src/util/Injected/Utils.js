@@ -128,6 +128,105 @@ exports.LoadUtils = () => {
         );
     };
 
+    /**
+     * Member tags of a group - the custom tag each participant set for themselves.
+     * WhatsApp Web keys them by LID, ids are mapped to phone numbers to match the participants list.
+     * @param {string} groupId
+     * @returns {Promise<Array<{id: string, lid: string, tag: string, timestamp: number}>>}
+     */
+    // The export name differs between builds (default vs named), find the collection by shape
+    window.WWebJS.getMemberLabelCollection = () => {
+        const module = window.require('WAWebMemberLabelCollection');
+        if (typeof module?.getModelsArray === 'function') return module;
+        return Object.values(module).find(
+            (value) => typeof value?.getModelsArray === 'function',
+        );
+    };
+
+    window.WWebJS.getGroupMemberTags = async (groupId) => {
+        const { createWid } = window.require('WAWebWidFactory');
+        const groupJid = window
+            .require('WAWebWidToJid')
+            .widToGroupJid(createWid(groupId));
+        const collection = window.WWebJS.getMemberLabelCollection();
+        await collection.initializeLabelsForChat(groupJid);
+        const { toPn } = window.require('WAWebLidMigrationUtils');
+        const tags = [];
+        for (const model of collection.getModelsArray()) {
+            if (model.id.chatId !== groupJid) continue;
+            // empty label means the tag was removed
+            if (!model.label) continue;
+            const memberWid = createWid(model.id.member);
+            const pn = toPn(memberWid);
+            tags.push({
+                id: window.WWebJS.GetSerialized(pn ?? memberWid),
+                lid: window.WWebJS.GetSerialized(memberWid),
+                tag: model.label,
+                timestamp: model.lastEditTimestamp,
+            });
+        }
+        return tags;
+    };
+
+    window.WWebJS.setMyGroupMemberTag = async (groupId, tag) => {
+        const chat = await window.WWebJS.getChat(groupId, {
+            getAsModel: false,
+        });
+        const { getMeLidUserOrThrow, getMaybeMePnUser } = window.require(
+            'WAWebUserPrefsMeUser',
+        );
+        const lidUser = getMeLidUserOrThrow();
+        const from = chat.groupMetadata?.isLidAddressingMode
+            ? lidUser
+            : getMaybeMePnUser();
+        const newId = await window.require('WAWebMsgKey').newId();
+        if (typeof window.onNewMessageId === 'function') {
+            window.onNewMessageId(newId);
+        }
+        const newMsgKey = new (window.require('WAWebMsgKey'))({
+            from: from,
+            to: chat.id,
+            id: newId,
+            participant: window
+                .require('WAWebWidFactory')
+                .asUserWidOrThrow(from),
+            selfDir: 'out',
+        });
+        const memberLabelData = {
+            label: tag,
+            labelTimestamp: parseInt(new Date().getTime() / 1000),
+        };
+        const message = {
+            id: newMsgKey,
+            ack: 0,
+            from: from,
+            to: chat.id,
+            local: true,
+            self: 'out',
+            t: memberLabelData.labelTimestamp,
+            isNewMsg: true,
+            type: 'protocol',
+            subtype: 'member_label',
+            memberLabelData: memberLabelData,
+        };
+        const [msgPromise, sendMsgResultPromise] = window
+            .require('WAWebSendMsgChatAction')
+            .addAndSendMsgToChat(chat, message);
+        await msgPromise;
+        const result = await sendMsgResultPromise;
+        if (result?.messageSendResult !== 'OK') {
+            return false;
+        }
+        // Own sends skip the incoming parser, apply the change to the local member label store ourselves
+        await window
+            .require('WAWebHandleMemberLabelChange')
+            .handleMemberLabelChange({
+                memberLabel: memberLabelData,
+                baseMessage: { id: { remote: chat.id, participant: lidUser } },
+            });
+        return true;
+    };
+
     window.WWebJS.injectToFunction(
         { module: 'WAWebBackendJobsCommon', function: 'mediaTypeFromProtobuf' },
         (module, func, ...args) => {
@@ -149,7 +248,10 @@ exports.LoadUtils = () => {
     window.WWebJS.forwardMessage = async (chatId, msgId) => {
         const WAWebChatForwardMessage = await window.WWebJS.requireLazy(
             'WAWebChatForwardMessage',
-            { 'WAWebForwardMessageFlow.react': 'WAWebForwardMessageFlowLoadable' },
+            {
+                'WAWebForwardMessageFlow.react':
+                    'WAWebForwardMessageFlowLoadable',
+            },
         );
         const msg =
             window.require('WAWebCollections').Msg.get(msgId) ||
@@ -329,17 +431,19 @@ exports.LoadUtils = () => {
             const { messageSecret } = eventSendOptions;
             let eventJoinLink = null;
             if (eventSendOptions.callType !== 'none') {
-                const WAWebGenerateEventCallLink = await window.WWebJS.requireLazy(
-                    'WAWebGenerateEventCallLink',
-                    {
-                        'WAWebEventsCreateEventModalFlow.react':
-                            'WAWebEventsCreateEventModalFlowLoadable',
-                    },
-                );
-                eventJoinLink = await WAWebGenerateEventCallLink.createEventCallLink(
-                    startTimeTs,
-                    eventSendOptions.callType,
-                );
+                const WAWebGenerateEventCallLink =
+                    await window.WWebJS.requireLazy(
+                        'WAWebGenerateEventCallLink',
+                        {
+                            'WAWebEventsCreateEventModalFlow.react':
+                                'WAWebEventsCreateEventModalFlowLoadable',
+                        },
+                    );
+                eventJoinLink =
+                    await WAWebGenerateEventCallLink.createEventCallLink(
+                        startTimeTs,
+                        eventSendOptions.callType,
+                    );
             }
             eventOptions = {
                 type: 'event_creation',
