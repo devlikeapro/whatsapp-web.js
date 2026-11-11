@@ -727,40 +727,41 @@ exports.LoadUtils = () => {
         if (isStatus) {
             const { backgroundColor, fontStyle } = extraOptions;
             const isMedia = Object.keys(mediaOptions).length > 0;
-            const mediaUpdate = (data) =>
-                window.require('WAWebMediaUpdateMsg')(data, mediaOptions);
-            const msg = new (window.require('WAWebCollections').Msg.modelClass)(
-                {
-                    ...message,
-                    author: participant ? participant : null,
-                    messageSecret: window.crypto.getRandomValues(
-                        new Uint8Array(32),
-                    ),
-                    cannotBeRanked: window
-                        .require('WAWebStatusGatingUtils')
-                        .isStatusRankingEnabled(),
-                },
+            const SendStatusMsgAction = await window.WWebJS.requireLazy(
+                'WAWebSendStatusMsgAction',
+                { WAWebSendStatusMsgAction: 'WAWebMediaPrepSendToChat' },
             );
 
-            // for text only
-            const statusOptions = {
-                color:
-                    (backgroundColor &&
-                        window.WWebJS.assertColor(backgroundColor)) ||
-                    0xff7acca5,
-                font: (fontStyle >= 0 && fontStyle <= 7 && fontStyle) || 0,
-                text: msg.body,
-            };
+            let result;
+            if (isMedia) {
+                result = await SendStatusMsgAction.sendStatusMediaMsgAction({
+                    mediaMsgData: {
+                        ...message,
+                        author: participant ? participant : null,
+                        messageSecret: window.crypto.getRandomValues(
+                            new Uint8Array(32),
+                        ),
+                    },
+                    // media is uploaded and its fields are in mediaMsgData already
+                    beforeSend: async () => {},
+                });
+            } else {
+                result = await SendStatusMsgAction.sendStatusTextMsgAction({
+                    color:
+                        (backgroundColor &&
+                            window.WWebJS.assertColor(backgroundColor)) ||
+                        0xff7acca5,
+                    font: (fontStyle >= 0 && fontStyle <= 7 && fontStyle) || 0,
+                    text: message.body,
+                });
+            }
 
-            await window
-                .require('WAWebSendStatusMsgAction')
-                [
-                    isMedia
-                        ? 'sendStatusMediaMsgAction'
-                        : 'sendStatusTextMsgAction'
-                ](...(isMedia ? [msg, mediaUpdate] : [statusOptions]));
-
-            return msg;
+            if (!result?.msg) {
+                throw new Error(
+                    `Failed to send status: ${result?.messageSendResult}`,
+                );
+            }
+            return result.msg;
         }
 
         const [msgPromise, sendMsgResultPromise] = window
