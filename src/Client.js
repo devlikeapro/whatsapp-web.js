@@ -1650,6 +1650,36 @@ class Client extends EventEmitter {
     }
 
     /**
+     * Mark messages as played - voice notes, video notes and view once media
+     * @param {string[]} messageIds
+     * @returns {Promise<string[]>} ids that were marked as played
+     */
+    async markPlayed(messageIds) {
+        return await this.pupPage.evaluate(async (msgIds) => {
+            const MarkPlayedMsgAction = await window.WWebJS.requireLazy(
+                'WAWebMarkPlayedMsgAction',
+                {
+                    'WAWebMediaViewerFlow.react':
+                        'WAWebMediaViewerFlowLoadable',
+                },
+            );
+            const Msg = window.require('WAWebCollections').Msg;
+            const played = [];
+            for (const msgId of msgIds) {
+                const msg =
+                    Msg.get(msgId) ||
+                    (await Msg.getMessagesById([msgId]))?.messages?.[0];
+                if (!msg) continue;
+                // Same check WhatsApp Web does before sending a played receipt
+                if (!MarkPlayedMsgAction.canMarkPlayed(msg)) continue;
+                await MarkPlayedMsgAction.markPlayed(msg);
+                played.push(msgId);
+            }
+            return played;
+        }, messageIds);
+    }
+
+    /**
      * An object representing mentions of groups
      * @typedef {Object} GroupMention
      * @property {string} subject - The name of a group to mention (can be custom)

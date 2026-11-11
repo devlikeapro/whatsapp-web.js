@@ -251,6 +251,9 @@ declare namespace WAWebJS {
         /** Mark as seen for the Chat */
         sendSeen(chatId: string): Promise<boolean>;
 
+        /** Mark messages as played - voice notes, video notes and view once media */
+        markPlayed(messageIds: string[]): Promise<string[]>;
+
         /** Mark the Chat as unread */
         markChatUnread(chatId: string): Promise<void>;
 
