@@ -1524,6 +1524,8 @@ class Client extends EventEmitter {
         await this.pupPage.evaluate(() => {
             return window.require('WAWebSocketModel').Socket.logout();
         });
+        // Socket.logout is fire-and-forget - give it time to send the unpair request
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         await this.pupBrowser.close();
 
         let maxDelay = 0;
