@@ -725,7 +725,7 @@ exports.LoadUtils = () => {
         }
 
         if (isStatus) {
-            const { backgroundColor, fontStyle } = extraOptions;
+            const { backgroundColor, fontStyle, canBeReshared } = extraOptions;
             const isMedia = Object.keys(mediaOptions).length > 0;
             const SendStatusMsgAction = await window.WWebJS.requireLazy(
                 'WAWebSendStatusMsgAction',
@@ -742,9 +742,9 @@ exports.LoadUtils = () => {
                             new Uint8Array(32),
                         ),
                     },
-                    // media is uploaded already, the action forces canBeReshared off - turn it back on
+                    // media is uploaded already, the action forces canBeReshared off - apply ours
                     beforeSend: async (msg) => {
-                        msg.set({ canBeReshared: true });
+                        msg.set({ canBeReshared: canBeReshared !== false });
                     },
                 });
             } else {
@@ -756,7 +756,7 @@ exports.LoadUtils = () => {
                         0xff7acca5,
                     font: (fontStyle >= 0 && fontStyle <= 7 && fontStyle) || 0,
                     text: message.body,
-                    canBeReshared: true,
+                    canBeReshared: canBeReshared !== false,
                 });
             }
 
