@@ -3149,9 +3149,17 @@ class Client extends EventEmitter {
             if (!msg.id.fromMe || !msg.id.remote.isStatus())
                 throw 'Invalid usage! Can only revoke the message its from own status broadcast';
 
-            return await window
-                .require('WAWebRevokeStatusAction')
-                .sendStatusRevokeMsgAction(status, msg);
+            const RevokeStatusAction = await window.WWebJS.requireLazy(
+                'WAWebRevokeStatusAction',
+                {
+                    'WAWebStatusQuotedFlow.react':
+                        'WAWebStatusQuotedFlowLoadable',
+                },
+            );
+            return await RevokeStatusAction.sendStatusRevokeMsgAction(
+                status,
+                msg,
+            );
         }, messageId);
     }
 
