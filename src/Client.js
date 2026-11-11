@@ -137,6 +137,7 @@ class Client extends EventEmitter {
             );
             const pairWithPhoneNumber = this.options.pairWithPhoneNumber;
             const version = await this.getWWebVersion();
+            if (abort.signal.aborted) return;
 
             const needAuthHandle = await this.pupPage.waitForFunction(
                 () => {
@@ -155,13 +156,15 @@ class Client extends EventEmitter {
                         state,
                     };
                 },
-                { timeout: authTimeout },
+                { timeout: authTimeout, signal: abort.signal },
             );
             const needAuthentication = await needAuthHandle.jsonValue();
+            if (abort.signal.aborted) return;
 
             if (needAuthentication.need) {
                 const { failed, failureEventPayload, restart } =
                     await this.authStrategy.onAuthenticationNeeded();
+                if (abort.signal.aborted) return;
 
                 if (failed) {
                     /**
@@ -232,6 +235,7 @@ class Client extends EventEmitter {
                             }
                         },
                     );
+                    if (abort.signal.aborted) return;
 
                     await this.pupPage.evaluate(async () => {
                         const registrationInfo = await window
@@ -419,6 +423,7 @@ class Client extends EventEmitter {
                         .catch((_) => _);
                 },
             );
+            if (abort.signal.aborted) return;
             await this.pupPage.evaluate(() => {
                 const Socket = window.require('WAWebSocketModel').Socket;
                 const Cmd = window.require('WAWebCmd').Cmd;
