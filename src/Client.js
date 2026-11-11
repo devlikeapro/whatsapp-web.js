@@ -604,9 +604,10 @@ class Client extends EventEmitter {
 
             if (!isLogout && storeAvailable) return;
 
-            // The handler is an async event listener - an unhandled rejection here would silently kill recovery
+            // A failed re-inject leaves no QR or ready event - report it so the caller can restart the client
             await this.inject().catch((err) => {
                 console.error('Failed to re-inject after navigation', err);
+                this.emit(Events.DISCONNECTED, 'INJECT_FAILED');
             });
         });
     }
