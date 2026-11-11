@@ -742,10 +742,13 @@ exports.LoadUtils = () => {
                             new Uint8Array(32),
                         ),
                     },
-                    // media is uploaded and its fields are in mediaMsgData already
-                    beforeSend: async () => {},
+                    // media is uploaded already, the action forces canBeReshared off - turn it back on
+                    beforeSend: async (msg) => {
+                        msg.set({ canBeReshared: true });
+                    },
                 });
             } else {
+                window.WWebJS.patchTextStatusReshare();
                 result = await SendStatusMsgAction.sendStatusTextMsgAction({
                     color:
                         (backgroundColor &&
@@ -753,6 +756,7 @@ exports.LoadUtils = () => {
                         0xff7acca5,
                     font: (fontStyle >= 0 && fontStyle <= 7 && fontStyle) || 0,
                     text: message.body,
+                    canBeReshared: true,
                 });
             }
 
@@ -996,6 +1000,25 @@ exports.LoadUtils = () => {
         });
 
         return mediaData;
+    };
+
+    /**
+     * Text status data is built with canBeReshared hardcoded off, take it from the options instead.
+     * Patched once, the action looks the function up on the module on every call.
+     */
+    window.WWebJS.patchTextStatusReshare = () => {
+        const StatusMsgDataUtils = window.require('WAWebStatusMsgDataUtils');
+        const original = StatusMsgDataUtils.createTextStatusMsgData;
+        if (original.wwebjsReshare) return;
+        const patched = async (options, ...rest) => {
+            const data = await original(options, ...rest);
+            if (data && options?.canBeReshared != null) {
+                data.canBeReshared = options.canBeReshared;
+            }
+            return data;
+        };
+        patched.wwebjsReshare = true;
+        StatusMsgDataUtils.createTextStatusMsgData = patched;
     };
 
     // MediaData is a model: its __x_* slots (e.g. __x_id) would overwrite the Msg's own when spread into it
