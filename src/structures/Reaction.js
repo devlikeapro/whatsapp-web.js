@@ -14,6 +14,8 @@ class Reaction extends Base {
     }
 
     _patch(data) {
+        this._data = data;
+
         /**
          * Reaction ID
          * @type {object}
@@ -61,6 +63,14 @@ class Reaction extends Base {
         this.ack = data.ack;
 
         return super._patch(data);
+    }
+
+    /**
+     * Returns reaction in a raw format
+     * @type {Object}
+     */
+    get rawData() {
+        return this._data;
     }
 }
 

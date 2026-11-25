@@ -2588,6 +2588,7 @@ declare namespace WAWebJS {
         msgId: MessageId;
         senderId: string;
         ack?: number;
+        rawData: object;
     }
 
     export type ReactionList = {
